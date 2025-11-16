@@ -1,0 +1,31 @@
+python3 --version
+python -m venv .venv
+pip install conan
+them path vao system neu duoc
+Edit the system environment variables.
+$env:Path += ";C:\Users\vuong\AppData\Local\Programs\Python\Python310\Scripts"
+conan --version
+
+conan profile detect --force # kiem tra compiler
+
+#nang cap PowerShell
+winget install Microsoft.PowerShell
+
+"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+---
+# msys2
+# Cập nhật hệ thống MSYS2
+pacman -Syu
+
+# Cài đặt Toolchain UCRT64 (GCC, Binutils, Mingw-w64 base)
+pacman -S mingw-w64-ucrt-x86_64-toolchain
+
+# Cài đặt CMake và Ninja (Rất quan trọng cho Conan)
+pacman -S mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+
+
+conan install . --output-folder=build --build=missing -s compiler=gcc -s compiler.cppstd=20
+
+cmake .. -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="d:\code\filevault\build\build\Release\generators\conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release

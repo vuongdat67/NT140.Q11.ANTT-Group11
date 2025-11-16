@@ -1,0 +1,59 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+
+# Conan
+conan.lock
+conaninfo.txt
+conanbuildinfo.*
+conan_toolchain.cmake
+CMakeUserPresets.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Compiled files
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Testing/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.vcxproj.user
+x64/
+x86/
+Debug/
+Release/
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+
+# Test artifacts
+*.fv
+*.encrypted
+test_output/
