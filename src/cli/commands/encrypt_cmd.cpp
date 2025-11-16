@@ -1,5 +1,6 @@
 #include "filevault/cli/commands/encrypt_cmd.hpp"
 #include "filevault/format/file_header.hpp"
+#include "filevault/core/modes.hpp"
 #include "filevault/utils/console.hpp"
 #include "filevault/utils/file_io.hpp"
 #include "filevault/utils/crypto_utils.hpp"
@@ -26,11 +27,14 @@ void EncryptCommand::setup(CLI::App& app) {
     
     encrypt_cmd->add_option("output", output_file_, "Output encrypted file");
     
+    encrypt_cmd->add_option("-m,--mode", mode_, "Mode preset (overrides other options)")
+        ->check(CLI::IsMember({"basic", "standard", "advanced"}));
+    
     encrypt_cmd->add_option("-a,--algorithm", algorithm_, "Encryption algorithm")
         ->check(CLI::IsMember({
             "aes-128-gcm", "aes-192-gcm", "aes-256-gcm", 
             "chacha20-poly1305",
-            "caesar", "vigenere", "playfair"
+            "caesar", "vigenere", "playfair", "substitution", "hill"
         }));
     
     encrypt_cmd->add_option("-s,--security", security_level_, "Security level")
@@ -59,6 +63,22 @@ void EncryptCommand::setup(CLI::App& app) {
 int EncryptCommand::execute() {
     try {
         utils::Console::header("FileVault Encryption");
+        
+        // Apply mode preset if specified
+        if (!mode_.empty()) {
+            auto user_mode = core::ModePreset::parse_mode(mode_);
+            auto preset = core::ModePreset::get_preset(user_mode);
+            
+            // Override settings with preset
+            algorithm_ = engine_.algorithm_name(preset.algorithm);
+            kdf_ = engine_.kdf_name(preset.kdf);
+            security_level_ = engine_.security_level_name(preset.security_level);
+            compression_type_ = compression::CompressionService::get_algorithm_name(preset.compression);
+            compression_level_ = preset.compression_level;
+            
+            utils::Console::info(fmt::format("Using {} mode: {}", 
+                               preset.name(), preset.description()));
+        }
         
         // Get password securely if not provided
         if (password_.empty()) {

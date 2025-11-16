@@ -57,16 +57,22 @@ find_package(LibLZMA REQUIRED)
 find_package(indicators REQUIRED)
 find_package(tabulate REQUIRED)
 
+if(BUILD_TESTS)
+    find_package(Catch2 REQUIRED)
+endif()
+
 # Core library sources
 set(CORE_SOURCES
     src/core/crypto_engine.cpp
     src/core/types.cpp
+    src/core/modes.cpp
     src/utils/console.cpp
     src/utils/file_io.cpp
     src/utils/crypto_utils.cpp
     src/utils/progress.cpp
     src/utils/table_formatter.cpp
     src/utils/password.cpp
+    src/utils/config.cpp
     src/format/file_header.cpp
 )
 
@@ -77,6 +83,7 @@ set(CLI_SOURCES
     src/cli/commands/hash_cmd.cpp
     src/cli/commands/list_cmd.cpp
     src/cli/commands/benchmark_cmd.cpp
+    src/cli/commands/config_cmd.cpp
 )
 
 set(ALGORITHM_SOURCES
@@ -84,6 +91,8 @@ set(ALGORITHM_SOURCES
     src/algorithms/classical/caesar.cpp
     src/algorithms/classical/vigenere.cpp
     src/algorithms/classical/playfair.cpp
+    src/algorithms/classical/hill.cpp
+    src/algorithms/classical/substitution.cpp
 )
 
 set(COMPRESSION_SOURCES
@@ -150,9 +159,51 @@ if(BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
     )
     
+    # Unit Tests
+    add_executable(test_classical tests/unit/crypto/test_classical.cpp)
+    target_link_libraries(test_classical PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_classical PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_classical PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_aes tests/unit/crypto/test_aes.cpp)
+    target_link_libraries(test_aes PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_aes PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_aes PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_kdf tests/unit/crypto/test_kdf.cpp)
+    target_link_libraries(test_kdf PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_kdf PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_kdf PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_compression tests/unit/compression/test_compression.cpp)
+    target_link_libraries(test_compression PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_compression PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_compression PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    # Integration Tests
+    add_executable(test_encrypt_decrypt_flow tests/integration/test_encrypt_decrypt_flow.cpp)
+    target_link_libraries(test_encrypt_decrypt_flow PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_encrypt_decrypt_flow PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_encrypt_decrypt_flow PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
     enable_testing()
     add_test(NAME NIST_Vectors COMMAND nist_test_vectors)
     add_test(NAME Rainbow_Table COMMAND rainbow_table_test)
+    add_test(NAME Classical_Ciphers COMMAND test_classical)
+    add_test(NAME AES_GCM COMMAND test_aes)
+    add_test(NAME KDF COMMAND test_kdf)
+    add_test(NAME Compression COMMAND test_compression)
+    add_test(NAME Integration_Flow COMMAND test_encrypt_decrypt_flow)
 endif()
 
 # Benchmarks - output to benchmarks/ directory

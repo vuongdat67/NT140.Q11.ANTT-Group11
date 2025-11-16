@@ -4,6 +4,7 @@
 #include "filevault/cli/commands/hash_cmd.hpp"
 #include "filevault/cli/commands/list_cmd.hpp"
 #include "filevault/cli/commands/benchmark_cmd.hpp"
+#include "filevault/cli/commands/config_cmd.hpp"
 #include "filevault/utils/console.hpp"
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -66,6 +67,7 @@ void Application::register_commands() {
     commands_.push_back(std::make_unique<HashCommand>(*engine_));
     commands_.push_back(std::make_unique<ListCommand>(*engine_));
     commands_.push_back(std::make_unique<BenchmarkCommand>(*engine_));
+    commands_.push_back(std::make_unique<ConfigCommand>());
     
     // Setup each command
     for (auto& cmd : commands_) {

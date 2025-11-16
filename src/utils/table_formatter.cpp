@@ -1,8 +1,19 @@
 #include "filevault/utils/table_formatter.hpp"
 #include <fmt/core.h>
 #include <iostream>
+#include <locale>
 
 using namespace tabulate;
+
+// Fix locale issues on Windows
+static void init_locale() {
+    try {
+        std::locale::global(std::locale(""));
+    } catch (...) {
+        // Fallback to C locale if system locale fails
+        std::locale::global(std::locale("C"));
+    }
+}
 
 namespace filevault {
 namespace utils {
@@ -30,13 +41,24 @@ void TableFormatter::add_row(const std::vector<std::string>& row) {
 }
 
 void TableFormatter::print() {
-    std::cout << table_ << std::endl;
+    try {
+        init_locale();
+        std::cout << table_ << std::endl;
+    } catch (const std::exception&) {
+        // Fallback: print as simple text
+        std::cout << to_string() << std::endl;
+    }
 }
 
 std::string TableFormatter::to_string() {
-    std::stringstream ss;
-    ss << table_;
-    return ss.str();
+    try {
+        init_locale();
+        std::stringstream ss;
+        ss << table_;
+        return ss.str();
+    } catch (const std::exception&) {
+        return "[Table formatting error]";
+    }
 }
 
 void TableFormatter::set_border_style(const std::string& style) {

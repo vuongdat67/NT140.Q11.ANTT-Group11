@@ -23,6 +23,7 @@ private:
     std::string output_file_;
     std::string password_;
     bool verbose_ = false;
+    bool no_progress_ = false;
 };
 
 } // namespace cli

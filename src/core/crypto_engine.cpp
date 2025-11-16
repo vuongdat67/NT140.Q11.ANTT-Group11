@@ -4,6 +4,8 @@
 #include "filevault/algorithms/classical/caesar.hpp"
 #include "filevault/algorithms/classical/vigenere.hpp"
 #include "filevault/algorithms/classical/playfair.hpp"
+#include "filevault/algorithms/classical/hill.hpp"
+#include "filevault/algorithms/classical/substitution.hpp"
 #include <botan/auto_rng.h>
 #include <botan/argon2.h>
 #include <botan/pwdhash.h>
@@ -34,6 +36,8 @@ void CryptoEngine::initialize() {
     register_algorithm(std::make_unique<algorithms::classical::Caesar>());
     register_algorithm(std::make_unique<algorithms::classical::Vigenere>());
     register_algorithm(std::make_unique<algorithms::classical::Playfair>());
+    register_algorithm(std::make_unique<algorithms::classical::HillCipher>());
+    register_algorithm(std::make_unique<algorithms::classical::SubstitutionCipher>());
     
     spdlog::info("CryptoEngine initialized with {} algorithms", algorithms_.size());
 }
@@ -179,6 +183,8 @@ std::string CryptoEngine::algorithm_name(AlgorithmType type) {
         case AlgorithmType::CAESAR: return "Caesar";
         case AlgorithmType::VIGENERE: return "Vigenère";
         case AlgorithmType::PLAYFAIR: return "Playfair";
+        case AlgorithmType::SUBSTITUTION: return "Substitution";
+        case AlgorithmType::HILL: return "Hill";
         default: return "Unknown";
     }
 }
@@ -194,6 +200,16 @@ std::string CryptoEngine::kdf_name(KDFType type) {
     }
 }
 
+std::string CryptoEngine::security_level_name(SecurityLevel level) {
+    switch (level) {
+        case SecurityLevel::WEAK: return "weak";
+        case SecurityLevel::MEDIUM: return "medium";
+        case SecurityLevel::STRONG: return "strong";
+        case SecurityLevel::PARANOID: return "paranoid";
+        default: return "medium";
+    }
+}
+
 std::optional<AlgorithmType> CryptoEngine::parse_algorithm(const std::string& name) {
     std::string lower = name;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
@@ -205,6 +221,8 @@ std::optional<AlgorithmType> CryptoEngine::parse_algorithm(const std::string& na
     if (lower == "caesar") return AlgorithmType::CAESAR;
     if (lower == "vigenere" || lower == "vigenère") return AlgorithmType::VIGENERE;
     if (lower == "playfair") return AlgorithmType::PLAYFAIR;
+    if (lower == "substitution" || lower == "sub") return AlgorithmType::SUBSTITUTION;
+    if (lower == "hill") return AlgorithmType::HILL;
     
     return std::nullopt;
 }

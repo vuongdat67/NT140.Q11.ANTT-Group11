@@ -25,7 +25,9 @@ enum class AlgorithmType {
     // Classic (educational)
     CAESAR,
     VIGENERE,
-    PLAYFAIR
+    PLAYFAIR,
+    SUBSTITUTION,
+    HILL
 };
 
 /**

@@ -1,27 +1,49 @@
 #include "filevault/utils/progress.hpp"
+#include <iostream>
+
+#ifdef _WIN32
+    #include <io.h>
+    #define ISATTY _isatty
+    #define FILENO _fileno
+#else
+    #include <unistd.h>
+    #define ISATTY isatty
+    #define FILENO fileno
+#endif
 
 using namespace indicators;
 
 namespace filevault {
 namespace utils {
 
+static bool is_terminal() {
+    return ISATTY(FILENO(stdout)) != 0;
+}
+
 ProgressBar::ProgressBar(const std::string& prefix, size_t max_progress)
     : current_progress_(0), max_progress_(max_progress) {
     
-    bar_ = std::make_unique<indicators::ProgressBar>(
-        option::BarWidth{50},
-        option::Start{"["},
-        option::Fill{"█"},
-        option::Lead{"█"},
-        option::Remainder{"-"},
-        option::End{"]"},
-        option::PrefixText{prefix},
-        option::ForegroundColor{Color::green},
-        option::ShowElapsedTime{true},
-        option::ShowRemainingTime{true},
-        option::ShowPercentage{true},
-        option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
-    );
+    // Only show fancy progress bar if stdout is a terminal
+    if (is_terminal()) {
+        bar_ = std::make_unique<indicators::ProgressBar>(
+            option::BarWidth{40},
+            option::Start{"["},
+            option::Fill{"="},
+            option::Lead{">"},
+            option::Remainder{" "},
+            option::End{"]"},
+            option::PrefixText{prefix + " "},
+            option::PostfixText{" "},
+            option::ForegroundColor{Color::cyan},
+            option::ShowElapsedTime{false},
+            option::ShowRemainingTime{false},
+            option::ShowPercentage{true},
+            option::MaxProgress{100}
+        );
+    } else {
+        // Piped output - don't use progress bar
+        bar_ = nullptr;
+    }
 }
 
 ProgressBar::~ProgressBar() {
@@ -51,6 +73,7 @@ void ProgressBar::set_postfix(const std::string& text) {
 
 void ProgressBar::mark_as_completed() {
     if (bar_) {
+        bar_->set_progress(100);  // Ensure it shows 100% before completing
         bar_->mark_as_completed();
     }
 }

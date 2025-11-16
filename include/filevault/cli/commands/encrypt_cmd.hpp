@@ -27,6 +27,7 @@ private:
     std::string input_file_;
     std::string output_file_;
     std::string password_;
+    std::string mode_;  // Mode preset: basic/standard/advanced
     std::string algorithm_ = "aes-256-gcm";
     std::string security_level_ = "medium";
     std::string kdf_ = "argon2id";

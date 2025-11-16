@@ -74,6 +74,11 @@ public:
     static std::string kdf_name(KDFType type);
     
     /**
+     * @brief Get security level name from type
+     */
+    static std::string security_level_name(SecurityLevel level);
+    
+    /**
      * @brief Parse algorithm from string
      */
     static std::optional<AlgorithmType> parse_algorithm(const std::string& name);
