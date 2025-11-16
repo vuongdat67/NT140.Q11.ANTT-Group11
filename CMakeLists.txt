@@ -86,6 +86,7 @@ set(CLI_SOURCES
     src/cli/commands/benchmark_cmd.cpp
     src/cli/commands/config_cmd.cpp
     src/cli/commands/info_cmd.cpp
+    src/cli/commands/compress_cmd.cpp
 )
 
 set(ALGORITHM_SOURCES

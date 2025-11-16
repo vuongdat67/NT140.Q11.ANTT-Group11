@@ -312,18 +312,29 @@ std::tuple<FileHeader, std::vector<uint8_t>, std::vector<uint8_t>> FileFormatHan
     // Deserialize header
     auto [header, header_size] = FileHeader::deserialize(file_data);
     
-    // Remaining data is ciphertext + tag
-    if (file_size < header_size + 16) {
-        throw std::runtime_error("File too small for ciphertext and auth tag");
+    // Check if algorithm uses authentication tag (AEAD)
+    bool has_tag = (header.algorithm == AlgorithmID::AES_128_GCM ||
+                    header.algorithm == AlgorithmID::AES_192_GCM ||
+                    header.algorithm == AlgorithmID::AES_256_GCM ||
+                    header.algorithm == AlgorithmID::CHACHA20_POLY1305);
+    
+    size_t tag_size = has_tag ? 16 : 0;
+    
+    // Remaining data is ciphertext + tag (if AEAD)
+    if (file_size < header_size + tag_size) {
+        throw std::runtime_error("File too small for header and ciphertext");
     }
     
-    size_t ciphertext_size = file_size - header_size - 16;
+    size_t ciphertext_size = file_size - header_size - tag_size;
     
     std::vector<uint8_t> ciphertext(ciphertext_size);
     std::memcpy(ciphertext.data(), file_data.data() + header_size, ciphertext_size);
     
-    std::vector<uint8_t> auth_tag(16);
-    std::memcpy(auth_tag.data(), file_data.data() + header_size + ciphertext_size, 16);
+    std::vector<uint8_t> auth_tag;
+    if (has_tag) {
+        auth_tag.resize(16);
+        std::memcpy(auth_tag.data(), file_data.data() + header_size + ciphertext_size, 16);
+    }
     
     return {header, ciphertext, auth_tag};
 }

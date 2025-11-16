@@ -244,12 +244,21 @@ int EncryptCommand::execute() {
         std::vector<uint8_t> ciphertext_only = encrypt_result.data;  // Already without tag
         std::vector<uint8_t> auth_tag;
         
-        if (encrypt_result.tag.has_value()) {
-            auth_tag = encrypt_result.tag.value();
-        } else {
-            utils::Console::error("No authentication tag generated");
-            return 1;
+        // Only AEAD algorithms (GCM, ChaCha20-Poly1305) have authentication tags
+        bool is_aead = (algo_type == core::AlgorithmType::AES_128_GCM ||
+                       algo_type == core::AlgorithmType::AES_192_GCM ||
+                       algo_type == core::AlgorithmType::AES_256_GCM ||
+                       algo_type == core::AlgorithmType::CHACHA20_POLY1305);
+        
+        if (is_aead) {
+            if (encrypt_result.tag.has_value()) {
+                auth_tag = encrypt_result.tag.value();
+            } else {
+                utils::Console::error("No authentication tag generated for AEAD algorithm");
+                return 1;
+            }
         }
+        // Classical ciphers don't have tags - auth_tag remains empty
         
         // Write enhanced format file
         bool write_success = core::FileFormatHandler::write_file(
