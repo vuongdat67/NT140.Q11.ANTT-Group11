@@ -43,12 +43,15 @@ private:
         size_t nonce_size = 0;
         size_t tag_size = 0;
         size_t data_size = 0;
+        size_t header_size = 0;
         
-        // TODO: Add when file format is enhanced
-        // std::string algorithm;
-        // std::string kdf_type;
-        // std::string compression;
-        // uint32_t version;
+        // Enhanced format fields
+        bool has_header = false;
+        std::string version;
+        std::string algorithm;
+        std::string kdf;
+        std::string compression;
+        bool compressed = false;
     };
     
     FileInfo parse_file(const std::string& path);

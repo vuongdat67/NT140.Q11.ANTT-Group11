@@ -1,4 +1,5 @@
 #include "filevault/cli/commands/info_cmd.hpp"
+#include "filevault/core/file_format.hpp"
 #include "filevault/utils/console.hpp"
 #include "filevault/utils/crypto_utils.hpp"
 #include <fmt/core.h>
@@ -50,29 +51,44 @@ InfoCommand::FileInfo InfoCommand::parse_file(const std::string& path) {
     info.file_size = file.tellg();
     file.seekg(0, std::ios::beg);
     
-    // Current file format (basic):
-    // [salt (32 bytes)][nonce (12 bytes)][ciphertext + tag]
-    // TODO: Update when enhanced file format is implemented
+    // Check if this is an enhanced format file
+    if (!core::FileFormatHandler::is_legacy_format(path)) {
+        // Enhanced format with header
+        try {
+            auto [header, ciphertext, auth_tag] = core::FileFormatHandler::read_file(path);
+            
+            info.has_header = true;
+            info.version = fmt::format("{}.{}", header.version_major, header.version_minor);
+            info.algorithm = engine_.algorithm_name(
+                core::FileFormatHandler::from_algorithm_id(header.algorithm)
+            );
+            info.kdf = engine_.kdf_name(
+                core::FileFormatHandler::from_kdf_id(header.kdf)
+            );
+            info.compression = core::FileFormatHandler::from_compression_id(header.compression);
+            info.salt_size = header.salt.size();
+            info.nonce_size = header.nonce.size();
+            info.tag_size = auth_tag.size();
+            info.data_size = ciphertext.size();
+            info.header_size = header.size();
+            info.compressed = header.compressed;
+            
+            return info;
+        } catch (const std::exception& e) {
+            throw std::runtime_error(fmt::format("Failed to parse enhanced format: {}", e.what()));
+        }
+    }
     
-    if (info.file_size < 44) {  // Minimum: salt + nonce
+    // Legacy format: [salt (32 bytes)][nonce (12 bytes)][ciphertext + tag]
+    if (info.file_size < 44) {
         throw std::runtime_error("File too small to be valid encrypted file");
     }
     
-    // Read salt
-    std::vector<uint8_t> salt(32);
-    file.read(reinterpret_cast<char*>(salt.data()), 32);
+    info.has_header = false;
     info.salt_size = 32;
-    
-    // Read nonce
-    std::vector<uint8_t> nonce(12);
-    file.read(reinterpret_cast<char*>(nonce.data()), 12);
     info.nonce_size = 12;
-    
-    // Remaining is ciphertext + tag
-    info.data_size = info.file_size - info.salt_size - info.nonce_size;
-    
-    // GCM tag is typically 16 bytes, embedded in ciphertext
     info.tag_size = 16;
+    info.data_size = info.file_size - info.salt_size - info.nonce_size;
     
     return info;
 }
@@ -83,11 +99,29 @@ void InfoCommand::display_info(const FileInfo& info) {
     fmt::print("  📦 {:25} : {}\n", "Total Size", 
                utils::CryptoUtils::format_bytes(info.file_size));
     
+    if (info.has_header) {
+        fmt::print("  ✨ {:25} : {} (Enhanced Format)\n", "Format Version", info.version);
+    } else {
+        fmt::print("  ⚠️  {:25} : Legacy (No Header)\n", "Format Version");
+    }
+    
     fmt::print("\n");
     utils::Console::separator();
     fmt::print("\n");
     
+    if (info.has_header) {
+        fmt::print("  🔐 Algorithm Information:\n");
+        fmt::print("     {:25} : {}\n", "Encryption", info.algorithm);
+        fmt::print("     {:25} : {}\n", "Key Derivation", info.kdf);
+        fmt::print("     {:25} : {}\n", "Compression", info.compression);
+        fmt::print("     {:25} : {}\n", "Compressed", info.compressed ? "Yes" : "No");
+        fmt::print("\n");
+    }
+    
     fmt::print("  🔒 Encryption Details:\n");
+    if (info.has_header) {
+        fmt::print("     {:25} : {} bytes\n", "Header Size", info.header_size);
+    }
     fmt::print("     {:25} : {} bytes\n", "Salt", info.salt_size);
     fmt::print("     {:25} : {} bytes\n", "Nonce", info.nonce_size);
     fmt::print("     {:25} : {} bytes\n", "Auth Tag", info.tag_size);
@@ -98,12 +132,25 @@ void InfoCommand::display_info(const FileInfo& info) {
         fmt::print("\n");
         fmt::print("  📊 Statistics:\n");
         double overhead = static_cast<double>(info.salt_size + info.nonce_size + info.tag_size);
+        if (info.has_header) {
+            overhead += info.header_size;
+        }
         double overhead_pct = (overhead / info.file_size) * 100.0;
         fmt::print("     {:25} : {:.2f}%\n", "Metadata Overhead", overhead_pct);
+        
+        if (info.has_header) {
+            size_t payload_size = info.data_size - info.tag_size;
+            fmt::print("     {:25} : {:.2f}%\n", "Payload Ratio", 
+                      (static_cast<double>(payload_size) / info.file_size) * 100.0);
+        }
     }
     
     fmt::print("\n");
-    utils::Console::warning("Note: This is basic file format. Enhanced format with full metadata coming soon.");
+    
+    if (!info.has_header) {
+        utils::Console::warning("Note: This file uses legacy format. Re-encrypt with new version for enhanced metadata.");
+    }
+    
     fmt::print("\n");
 }
 

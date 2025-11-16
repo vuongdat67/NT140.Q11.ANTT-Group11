@@ -74,6 +74,7 @@ set(CORE_SOURCES
     src/utils/password.cpp
     src/utils/config.cpp
     src/format/file_header.cpp
+    src/format/file_format.cpp
 )
 
 set(CLI_SOURCES
