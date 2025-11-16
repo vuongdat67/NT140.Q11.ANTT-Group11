@@ -7,6 +7,7 @@
 #include "filevault/cli/commands/config_cmd.hpp"
 #include "filevault/cli/commands/info_cmd.hpp"
 #include "filevault/cli/commands/compress_cmd.hpp"
+#include "filevault/cli/commands/stego_cmd.hpp"
 #include "filevault/utils/console.hpp"
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -72,6 +73,7 @@ void Application::register_commands() {
     commands_.push_back(std::make_unique<ConfigCommand>());
     commands_.push_back(std::make_unique<InfoCommand>(*engine_));
     commands_.push_back(std::make_unique<CompressCommand>());
+    commands_.push_back(std::make_unique<commands::StegoCommand>());
     
     // Setup each command
     for (auto& cmd : commands_) {

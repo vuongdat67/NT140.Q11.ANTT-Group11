@@ -57,6 +57,10 @@ find_package(LibLZMA REQUIRED)
 find_package(indicators REQUIRED)
 find_package(tabulate REQUIRED)
 
+# stb is header-only, include from conan-generated config
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/build/Release/generators")
+find_package(stb REQUIRED)
+
 if(BUILD_TESTS)
     find_package(Catch2 REQUIRED)
 endif()
@@ -87,6 +91,7 @@ set(CLI_SOURCES
     src/cli/commands/config_cmd.cpp
     src/cli/commands/info_cmd.cpp
     src/cli/commands/compress_cmd.cpp
+    src/cli/commands/stego_cmd.cpp
 )
 
 set(ALGORITHM_SOURCES
@@ -102,11 +107,16 @@ set(COMPRESSION_SOURCES
     src/compression/compressor.cpp
 )
 
+set(STEGANOGRAPHY_SOURCES
+    src/steganography/lsb.cpp
+)
+
 # Create static library
 add_library(filevault_lib STATIC
     ${CORE_SOURCES}
     ${ALGORITHM_SOURCES}
     ${COMPRESSION_SOURCES}
+    ${STEGANOGRAPHY_SOURCES}
 )
 
 target_include_directories(filevault_lib
@@ -126,6 +136,7 @@ target_link_libraries(filevault_lib
         LibLZMA::LibLZMA
         indicators::indicators
         tabulate::tabulate
+        stb::stb
 )
 
 # Main executable
