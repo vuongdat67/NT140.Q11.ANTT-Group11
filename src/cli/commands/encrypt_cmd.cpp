@@ -1,5 +1,6 @@
 #include "filevault/cli/commands/encrypt_cmd.hpp"
 #include "filevault/format/file_header.hpp"
+#include "filevault/core/file_format.hpp"
 #include "filevault/core/modes.hpp"
 #include "filevault/utils/console.hpp"
 #include "filevault/utils/file_io.hpp"
@@ -227,47 +228,54 @@ int EncryptCommand::execute() {
         
         utils::Console::info(fmt::format("Encrypted in {:.2f}ms", encrypt_result.processing_time_ms));
         
-        // Create file header
-        format::FileHeader header;
-        header.set_algorithm(algo_type);
-        header.set_kdf(kdf_type);
-        header.set_security_level(sec_level);
-        header.set_salt(salt);
-        header.set_nonce(nonce);
+        // Create enhanced file header
+        config.compression = compressed ? core::CompressionType::ZLIB : core::CompressionType::NONE;
+        auto header = core::FileFormatHandler::create_header(
+            algo_type,
+            kdf_type,
+            config,
+            salt,
+            nonce,
+            compressed
+        );
+        
+        // Extract ciphertext and tag from CryptoResult
+        // AES_GCM::encrypt() stores them separately in result.data and result.tag
+        std::vector<uint8_t> ciphertext_only = encrypt_result.data;  // Already without tag
+        std::vector<uint8_t> auth_tag;
+        
         if (encrypt_result.tag.has_value()) {
-            header.set_tag(encrypt_result.tag.value());
-        }
-        header.set_original_size(original_size);  // Original uncompressed size
-        header.set_encrypted_size(encrypt_result.data.size());
-        header.set_timestamp(std::chrono::system_clock::now().time_since_epoch().count());
-        header.set_compressed(compressed);
-        
-        if (!header.validate()) {
-            utils::Console::error("Invalid header generated");
+            auth_tag = encrypt_result.tag.value();
+        } else {
+            utils::Console::error("No authentication tag generated");
             return 1;
         }
         
-        // Serialize header + ciphertext
-        auto header_bytes = header.serialize();
-        std::vector<uint8_t> output;
-        output.reserve(header_bytes.size() + encrypt_result.data.size());
-        output.insert(output.end(), header_bytes.begin(), header_bytes.end());
-        output.insert(output.end(), encrypt_result.data.begin(), encrypt_result.data.end());
+        // Write enhanced format file
+        bool write_success = core::FileFormatHandler::write_file(
+            output_file_,
+            header,
+            ciphertext_only,
+            auth_tag
+        );
         
-        // Write output file
-        auto write_result = utils::FileIO::write_file(output_file_, output);
-        if (!write_result) {
-            utils::Console::error(write_result.error_message);
+        if (!write_success) {
+            utils::Console::error("Failed to write output file");
             return 1;
         }
+        
+        // Get final file size
+        std::ifstream check_file(output_file_, std::ios::binary | std::ios::ate);
+        size_t final_size = check_file.tellg();
+        check_file.close();
         
         utils::Console::separator();
         utils::Console::success("Encryption completed!");
-        utils::Console::info(fmt::format("Output: {} ({} bytes)", 
+        utils::Console::info(fmt::format("Output: {} ({})", 
                            output_file_, 
-                           utils::CryptoUtils::format_bytes(output.size())));
+                           utils::CryptoUtils::format_bytes(final_size)));
         utils::Console::info(fmt::format("Compression: {:.1f}%", 
-                           100.0 * output.size() / plaintext.size()));
+                           100.0 * final_size / plaintext.size()));
         
         return 0;
         

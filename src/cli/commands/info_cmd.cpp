@@ -125,8 +125,12 @@ void InfoCommand::display_info(const FileInfo& info) {
     fmt::print("     {:25} : {} bytes\n", "Salt", info.salt_size);
     fmt::print("     {:25} : {} bytes\n", "Nonce", info.nonce_size);
     fmt::print("     {:25} : {} bytes\n", "Auth Tag", info.tag_size);
+    
+    // For enhanced format, data_size is already just ciphertext (tag separate)
+    // For legacy format, data_size includes tag, so subtract it
+    size_t actual_data_size = info.has_header ? info.data_size : (info.data_size - info.tag_size);
     fmt::print("     {:25} : {}\n", "Encrypted Data", 
-               utils::CryptoUtils::format_bytes(info.data_size - info.tag_size));
+               utils::CryptoUtils::format_bytes(actual_data_size));
     
     if (verbose_) {
         fmt::print("\n");
@@ -138,8 +142,8 @@ void InfoCommand::display_info(const FileInfo& info) {
         double overhead_pct = (overhead / info.file_size) * 100.0;
         fmt::print("     {:25} : {:.2f}%\n", "Metadata Overhead", overhead_pct);
         
-        if (info.has_header) {
-            size_t payload_size = info.data_size - info.tag_size;
+        if (info.has_header || verbose_) {
+            size_t payload_size = actual_data_size;
             fmt::print("     {:25} : {:.2f}%\n", "Payload Ratio", 
                       (static_cast<double>(payload_size) / info.file_size) * 100.0);
         }

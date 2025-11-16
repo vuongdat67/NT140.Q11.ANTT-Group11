@@ -1,5 +1,6 @@
 #include "filevault/cli/commands/decrypt_cmd.hpp"
 #include "filevault/format/file_header.hpp"
+#include "filevault/core/file_format.hpp"
 #include "filevault/utils/console.hpp"
 #include "filevault/utils/file_io.hpp"
 #include "filevault/utils/crypto_utils.hpp"
@@ -70,26 +71,75 @@ int DecryptCommand::execute() {
         const auto& encrypted_file = file_result.value;
         utils::Console::info(fmt::format("Read {} bytes", encrypted_file.size()));
         
-        // Parse header
-        auto header_result = format::FileHeader::deserialize(encrypted_file);
-        if (!header_result) {
-            utils::Console::error(header_result.error_message);
-            return 1;
+        // Check if this is enhanced or legacy format
+        bool is_enhanced = !core::FileFormatHandler::is_legacy_format(input_file_);
+        
+        core::FileHeader enhanced_header;
+        std::vector<uint8_t> ciphertext_data;
+        std::vector<uint8_t> auth_tag_data;
+        std::vector<uint8_t> salt_data;
+        std::vector<uint8_t> nonce_data;
+        core::AlgorithmType algo_type;
+        core::KDFType kdf_type;
+        bool is_compressed = false;
+        
+        if (is_enhanced) {
+            // Enhanced format with full header
+            try {
+                auto [header, ciphertext, auth_tag] = core::FileFormatHandler::read_file(input_file_);
+                enhanced_header = header;
+                ciphertext_data = ciphertext;
+                auth_tag_data = auth_tag;
+                salt_data = header.salt;
+                nonce_data = header.nonce;
+                algo_type = core::FileFormatHandler::from_algorithm_id(header.algorithm);
+                kdf_type = core::FileFormatHandler::from_kdf_id(header.kdf);
+                is_compressed = header.compressed;
+                
+                utils::Console::info("Format: Enhanced (v1.0)");
+            } catch (const std::exception& e) {
+                utils::Console::error(fmt::format("Failed to parse enhanced format: {}", e.what()));
+                return 1;
+            }
+        } else {
+            // Legacy format - try old header parser
+            utils::Console::info("Format: Legacy");
+            auto header_result = format::FileHeader::deserialize(encrypted_file);
+            if (!header_result) {
+                utils::Console::error(header_result.error_message);
+                return 1;
+            }
+            
+            auto header = header_result.value;
+            if (!header.validate()) {
+                utils::Console::error("Invalid file header");
+                return 1;
+            }
+            
+            salt_data = header.salt();
+            nonce_data = header.nonce();
+            algo_type = header.algorithm();
+            kdf_type = header.kdf();
+            is_compressed = header.is_compressed();
+            
+            // Extract ciphertext (skip old header)
+            size_t header_size = header.total_size();
+            if (encrypted_file.size() < header_size) {
+                utils::Console::error("File corrupted: too small");
+                return 1;
+            }
+            
+            ciphertext_data.assign(
+                encrypted_file.begin() + header_size,
+                encrypted_file.end()
+            );
         }
         
-        auto header = header_result.value;
-        if (!header.validate()) {
-            utils::Console::error("Invalid file header");
-            return 1;
-        }
-        
-        utils::Console::info(fmt::format("Algorithm: {}", 
-                           engine_.algorithm_name(header.algorithm())));
-        utils::Console::info(fmt::format("KDF:       {}", 
-                           engine_.kdf_name(header.kdf())));
+        utils::Console::info(fmt::format("Algorithm: {}", engine_.algorithm_name(algo_type)));
+        utils::Console::info(fmt::format("KDF:       {}", engine_.kdf_name(kdf_type)));
         
         // Get algorithm
-        auto* algorithm = engine_.get_algorithm(header.algorithm());
+        auto* algorithm = engine_.get_algorithm(algo_type);
         if (!algorithm) {
             utils::Console::error("Algorithm not supported");
             return 1;
@@ -97,11 +147,11 @@ int DecryptCommand::execute() {
         
         // Setup config for key derivation and decryption
         core::EncryptionConfig config;
-        config.algorithm = header.algorithm();
-        config.kdf = header.kdf();
-        config.level = header.security_level();
-        config.nonce = header.nonce();
-        config.tag = header.tag();
+        config.algorithm = algo_type;
+        config.kdf = kdf_type;
+        config.level = core::SecurityLevel::MEDIUM;
+        config.nonce = std::make_optional(nonce_data);
+        config.tag = std::make_optional(auth_tag_data);  // GCM requires tag in config
         config.apply_security_level();
         
         // Step 1: Derive key from password and salt
@@ -112,23 +162,15 @@ int DecryptCommand::execute() {
             kdf_progress->set_progress(50);
         }
         
-        auto key = engine_.derive_key(password_, header.salt(), config);
+        auto key = engine_.derive_key(password_, salt_data, config);
         
         if (kdf_progress) {
             kdf_progress->mark_as_completed();
         }
         
-        // Extract ciphertext (skip header)
-        size_t header_size = header.total_size();
-        if (encrypted_file.size() < header_size) {
-            utils::Console::error("File corrupted: too small");
-            return 1;
-        }
-        
-        std::span<const uint8_t> ciphertext(
-            encrypted_file.data() + header_size,
-            encrypted_file.size() - header_size
-        );
+        // Prepare ciphertext for decryption
+        // GCM algorithm expects config.nonce and config.tag, ciphertext WITHOUT tag
+        std::vector<uint8_t> ciphertext_to_decrypt = ciphertext_data;
         
         // Step 2: Decrypt
         utils::Console::info("Decrypting...");
@@ -138,7 +180,7 @@ int DecryptCommand::execute() {
             decrypt_progress->set_progress(50);
         }
         
-        auto decrypt_result = algorithm->decrypt(ciphertext, key, config);
+        auto decrypt_result = algorithm->decrypt(ciphertext_to_decrypt, key, config);
         
         if (decrypt_progress) {
             decrypt_progress->mark_as_completed();
@@ -157,7 +199,7 @@ int DecryptCommand::execute() {
         // Step 3: Decompress if needed
         auto plaintext = decrypt_result.data;
         
-        if (header.is_compressed()) {
+        if (is_compressed) {
             utils::Console::info("Decompressing...");
             std::unique_ptr<utils::ProgressBar> decompress_progress;
             if (!no_progress_) {
@@ -199,12 +241,6 @@ int DecryptCommand::execute() {
             if (decompress_progress) {
                 decompress_progress->mark_as_completed();
             }
-        }
-        
-        // Verify size matches expected original
-        if (plaintext.size() != header.original_size()) {
-            utils::Console::warning(fmt::format("Output size ({}) doesn't match expected size ({})",
-                                   plaintext.size(), header.original_size()));
         }
         
         // Write output
