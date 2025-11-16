@@ -13,14 +13,16 @@ namespace core {
  * @brief Enumeration of encryption algorithm types
  */
 enum class AlgorithmType {
-    // Symmetric ciphers (modern)
+    // Symmetric ciphers (modern AEAD)
     AES_128_GCM,
     AES_192_GCM,
     AES_256_GCM,
+    CHACHA20_POLY1305,
+    
+    // Symmetric ciphers (CBC mode - legacy)
     AES_128_CBC,
     AES_192_CBC,
     AES_256_CBC,
-    CHACHA20_POLY1305,
     
     // Classic (educational)
     CAESAR,

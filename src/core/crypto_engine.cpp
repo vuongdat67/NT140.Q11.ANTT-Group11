@@ -1,6 +1,7 @@
 #include "filevault/core/crypto_engine.hpp"
 #include "filevault/core/types.hpp"
 #include "filevault/algorithms/symmetric/aes_gcm.hpp"
+#include "filevault/algorithms/symmetric/chacha20_poly1305.hpp"
 #include "filevault/algorithms/classical/caesar.hpp"
 #include "filevault/algorithms/classical/vigenere.hpp"
 #include "filevault/algorithms/classical/playfair.hpp"
@@ -27,10 +28,11 @@ CryptoEngine::~CryptoEngine() {
 void CryptoEngine::initialize() {
     spdlog::info("Initializing CryptoEngine...");
     
-    // Register modern symmetric algorithms
+    // Register modern symmetric algorithms (AEAD)
     register_algorithm(std::make_unique<algorithms::symmetric::AES_GCM>(128));
     register_algorithm(std::make_unique<algorithms::symmetric::AES_GCM>(192));
     register_algorithm(std::make_unique<algorithms::symmetric::AES_GCM>(256));
+    register_algorithm(std::make_unique<algorithms::symmetric::ChaCha20Poly1305>());
     
     // Register classical ciphers (educational only)
     register_algorithm(std::make_unique<algorithms::classical::Caesar>());

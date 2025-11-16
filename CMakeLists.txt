@@ -96,6 +96,7 @@ set(CLI_SOURCES
 
 set(ALGORITHM_SOURCES
     src/algorithms/symmetric/aes_gcm.cpp
+    src/algorithms/symmetric/chacha20_poly1305.cpp
     src/algorithms/classical/caesar.cpp
     src/algorithms/classical/vigenere.cpp
     src/algorithms/classical/playfair.cpp
@@ -202,6 +203,35 @@ if(BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
     )
     
+    add_executable(test_chacha20 tests/unit/crypto/test_chacha20.cpp)
+    target_link_libraries(test_chacha20 PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_chacha20 PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_chacha20 PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    # Security Tests
+    add_executable(test_nonce_uniqueness tests/security/test_nonce_uniqueness.cpp)
+    target_link_libraries(test_nonce_uniqueness PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_nonce_uniqueness PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_nonce_uniqueness PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_salt_uniqueness tests/security/test_salt_uniqueness.cpp)
+    target_link_libraries(test_salt_uniqueness PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_salt_uniqueness PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_salt_uniqueness PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_timing_attacks tests/security/test_timing_attacks.cpp)
+    target_link_libraries(test_timing_attacks PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_timing_attacks PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_timing_attacks PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
     # Integration Tests
     add_executable(test_encrypt_decrypt_flow tests/integration/test_encrypt_decrypt_flow.cpp)
     target_link_libraries(test_encrypt_decrypt_flow PRIVATE filevault_lib Catch2::Catch2WithMain)
@@ -215,9 +245,13 @@ if(BUILD_TESTS)
     add_test(NAME Rainbow_Table COMMAND rainbow_table_test)
     add_test(NAME Classical_Ciphers COMMAND test_classical)
     add_test(NAME AES_GCM COMMAND test_aes)
+    add_test(NAME ChaCha20_Poly1305 COMMAND test_chacha20)
     add_test(NAME KDF COMMAND test_kdf)
     add_test(NAME Compression COMMAND test_compression)
     add_test(NAME Integration_Flow COMMAND test_encrypt_decrypt_flow)
+    add_test(NAME Security_Nonce_Uniqueness COMMAND test_nonce_uniqueness)
+    add_test(NAME Security_Salt_Uniqueness COMMAND test_salt_uniqueness)
+    add_test(NAME Security_Timing_Attacks COMMAND test_timing_attacks)
 endif()
 
 # Benchmarks - output to benchmarks/ directory
