@@ -92,6 +92,7 @@ set(CLI_SOURCES
     src/cli/commands/info_cmd.cpp
     src/cli/commands/compress_cmd.cpp
     src/cli/commands/stego_cmd.cpp
+    src/cli/commands/archive_cmd.cpp
 )
 
 set(ALGORITHM_SOURCES
@@ -112,12 +113,17 @@ set(STEGANOGRAPHY_SOURCES
     src/steganography/lsb.cpp
 )
 
+set(ARCHIVE_SOURCES
+    src/archive/archive_format.cpp
+)
+
 # Create static library
 add_library(filevault_lib STATIC
     ${CORE_SOURCES}
     ${ALGORITHM_SOURCES}
     ${COMPRESSION_SOURCES}
     ${STEGANOGRAPHY_SOURCES}
+    ${ARCHIVE_SOURCES}
 )
 
 target_include_directories(filevault_lib
