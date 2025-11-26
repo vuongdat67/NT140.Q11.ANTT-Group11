@@ -92,6 +92,7 @@ size_t FileHeader::size() const {
            salt.size() +
            4 +  // kdf_params length prefix
            kdf_params.size() +
+           1 +  // nonce size byte
            nonce.size() +
            1;   // compressed flag
 }
@@ -125,7 +126,9 @@ std::vector<uint8_t> FileHeader::serialize() const {
     data.insert(data.end(), len_bytes, len_bytes + 4);
     data.insert(data.end(), kdf_params.begin(), kdf_params.end());
     
-    // Nonce
+    // Nonce (size-prefixed: 1 byte for size, then nonce data)
+    uint8_t nonce_size = static_cast<uint8_t>(nonce.size());
+    data.push_back(nonce_size);
     data.insert(data.end(), nonce.begin(), nonce.end());
     
     // Compressed flag
@@ -186,12 +189,18 @@ std::pair<FileHeader, size_t> FileHeader::deserialize(std::span<const uint8_t> d
     header.kdf_params.assign(data.begin() + offset, data.begin() + offset + kdf_params_len);
     offset += kdf_params_len;
     
-    // Nonce (12 bytes)
-    if (data.size() < offset + 12) {
+    // Nonce size (1 byte)
+    if (data.size() < offset + 1) {
+        throw std::runtime_error("File too small for nonce size");
+    }
+    uint8_t nonce_size = data[offset++];
+    
+    // Nonce (variable size)
+    if (data.size() < offset + nonce_size) {
         throw std::runtime_error("File too small for nonce");
     }
-    header.nonce.assign(data.begin() + offset, data.begin() + offset + 12);
-    offset += 12;
+    header.nonce.assign(data.begin() + offset, data.begin() + offset + nonce_size);
+    offset += nonce_size;
     
     // Compressed flag
     if (data.size() < offset + 1) {
@@ -355,6 +364,27 @@ AlgorithmID FileFormatHandler::to_algorithm_id(AlgorithmType type) {
         case AlgorithmType::AES_128_GCM: return AlgorithmID::AES_128_GCM;
         case AlgorithmType::AES_192_GCM: return AlgorithmID::AES_192_GCM;
         case AlgorithmType::AES_256_GCM: return AlgorithmID::AES_256_GCM;
+        case AlgorithmType::AES_128_CBC: return AlgorithmID::AES_128_CBC;
+        case AlgorithmType::AES_192_CBC: return AlgorithmID::AES_192_CBC;
+        case AlgorithmType::AES_256_CBC: return AlgorithmID::AES_256_CBC;
+        case AlgorithmType::AES_128_CTR: return AlgorithmID::AES_128_CTR;
+        case AlgorithmType::AES_192_CTR: return AlgorithmID::AES_192_CTR;
+        case AlgorithmType::AES_256_CTR: return AlgorithmID::AES_256_CTR;
+        case AlgorithmType::AES_128_CFB: return AlgorithmID::AES_128_CFB;
+        case AlgorithmType::AES_192_CFB: return AlgorithmID::AES_192_CFB;
+        case AlgorithmType::AES_256_CFB: return AlgorithmID::AES_256_CFB;
+        case AlgorithmType::AES_128_OFB: return AlgorithmID::AES_128_OFB;
+        case AlgorithmType::AES_192_OFB: return AlgorithmID::AES_192_OFB;
+        case AlgorithmType::AES_256_OFB: return AlgorithmID::AES_256_OFB;
+        case AlgorithmType::AES_128_ECB: return AlgorithmID::AES_128_ECB;
+        case AlgorithmType::AES_192_ECB: return AlgorithmID::AES_192_ECB;
+        case AlgorithmType::AES_256_ECB: return AlgorithmID::AES_256_ECB;
+        case AlgorithmType::AES_128_XTS: return AlgorithmID::AES_128_XTS;
+        case AlgorithmType::AES_256_XTS: return AlgorithmID::AES_256_XTS;
+        case AlgorithmType::TRIPLE_DES_CBC: return AlgorithmID::TRIPLE_DES_CBC;
+        case AlgorithmType::RSA_2048: return AlgorithmID::RSA_2048;
+        case AlgorithmType::RSA_3072: return AlgorithmID::RSA_3072;
+        case AlgorithmType::RSA_4096: return AlgorithmID::RSA_4096;
         case AlgorithmType::CHACHA20_POLY1305: return AlgorithmID::CHACHA20_POLY1305;
         case AlgorithmType::SERPENT_256_GCM: return AlgorithmID::SERPENT_256_GCM;
         case AlgorithmType::TWOFISH_128_GCM: return AlgorithmID::TWOFISH_128_GCM;
@@ -381,6 +411,27 @@ AlgorithmType FileFormatHandler::from_algorithm_id(AlgorithmID id) {
         case AlgorithmID::AES_128_GCM: return AlgorithmType::AES_128_GCM;
         case AlgorithmID::AES_192_GCM: return AlgorithmType::AES_192_GCM;
         case AlgorithmID::AES_256_GCM: return AlgorithmType::AES_256_GCM;
+        case AlgorithmID::AES_128_CBC: return AlgorithmType::AES_128_CBC;
+        case AlgorithmID::AES_192_CBC: return AlgorithmType::AES_192_CBC;
+        case AlgorithmID::AES_256_CBC: return AlgorithmType::AES_256_CBC;
+        case AlgorithmID::AES_128_CTR: return AlgorithmType::AES_128_CTR;
+        case AlgorithmID::AES_192_CTR: return AlgorithmType::AES_192_CTR;
+        case AlgorithmID::AES_256_CTR: return AlgorithmType::AES_256_CTR;
+        case AlgorithmID::AES_128_CFB: return AlgorithmType::AES_128_CFB;
+        case AlgorithmID::AES_192_CFB: return AlgorithmType::AES_192_CFB;
+        case AlgorithmID::AES_256_CFB: return AlgorithmType::AES_256_CFB;
+        case AlgorithmID::AES_128_OFB: return AlgorithmType::AES_128_OFB;
+        case AlgorithmID::AES_192_OFB: return AlgorithmType::AES_192_OFB;
+        case AlgorithmID::AES_256_OFB: return AlgorithmType::AES_256_OFB;
+        case AlgorithmID::AES_128_ECB: return AlgorithmType::AES_128_ECB;
+        case AlgorithmID::AES_192_ECB: return AlgorithmType::AES_192_ECB;
+        case AlgorithmID::AES_256_ECB: return AlgorithmType::AES_256_ECB;
+        case AlgorithmID::AES_128_XTS: return AlgorithmType::AES_128_XTS;
+        case AlgorithmID::AES_256_XTS: return AlgorithmType::AES_256_XTS;
+        case AlgorithmID::TRIPLE_DES_CBC: return AlgorithmType::TRIPLE_DES_CBC;
+        case AlgorithmID::RSA_2048: return AlgorithmType::RSA_2048;
+        case AlgorithmID::RSA_3072: return AlgorithmType::RSA_3072;
+        case AlgorithmID::RSA_4096: return AlgorithmType::RSA_4096;
         case AlgorithmID::CHACHA20_POLY1305: return AlgorithmType::CHACHA20_POLY1305;
         case AlgorithmID::SERPENT_256_GCM: return AlgorithmType::SERPENT_256_GCM;
         case AlgorithmID::TWOFISH_128_GCM: return AlgorithmType::TWOFISH_128_GCM;

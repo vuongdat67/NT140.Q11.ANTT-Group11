@@ -36,10 +36,42 @@ enum class AlgorithmType {
     // SM4 (Chinese standard - GB/T 32907-2016)
     SM4_GCM,
     
-    // Symmetric ciphers (CBC mode - legacy)
+    // Symmetric ciphers (CBC mode - legacy, not authenticated)
     AES_128_CBC,
     AES_192_CBC,
     AES_256_CBC,
+    
+    // Symmetric ciphers (CTR mode - stream, not authenticated)
+    AES_128_CTR,
+    AES_192_CTR,
+    AES_256_CTR,
+    
+    // Symmetric ciphers (CFB mode - self-synchronizing stream)
+    AES_128_CFB,
+    AES_192_CFB,
+    AES_256_CFB,
+    
+    // Symmetric ciphers (OFB mode - output feedback stream)
+    AES_128_OFB,
+    AES_192_OFB,
+    AES_256_OFB,
+    
+    // Symmetric ciphers (ECB mode - INSECURE, educational only)
+    AES_128_ECB,
+    AES_192_ECB,
+    AES_256_ECB,
+    
+    // Symmetric ciphers (XTS mode - disk encryption)
+    AES_128_XTS,
+    AES_256_XTS,
+    
+    // Legacy algorithms (for compatibility only)
+    TRIPLE_DES_CBC,
+    
+    // Asymmetric encryption (RSA)
+    RSA_2048,
+    RSA_3072,
+    RSA_4096,
     
     // Classic (educational)
     CAESAR,

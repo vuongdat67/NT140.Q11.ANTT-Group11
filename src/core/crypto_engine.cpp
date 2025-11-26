@@ -1,12 +1,20 @@
 #include "filevault/core/crypto_engine.hpp"
 #include "filevault/core/types.hpp"
 #include "filevault/algorithms/symmetric/aes_gcm.hpp"
+#include "filevault/algorithms/symmetric/aes_cbc.hpp"
+#include "filevault/algorithms/symmetric/aes_ctr.hpp"
+#include "filevault/algorithms/symmetric/aes_cfb.hpp"
+#include "filevault/algorithms/symmetric/aes_ofb.hpp"
+#include "filevault/algorithms/symmetric/aes_ecb.hpp"
+#include "filevault/algorithms/symmetric/aes_xts.hpp"
+#include "filevault/algorithms/symmetric/triple_des.hpp"
 #include "filevault/algorithms/symmetric/chacha20_poly1305.hpp"
 #include "filevault/algorithms/symmetric/serpent_gcm.hpp"
 #include "filevault/algorithms/symmetric/twofish_gcm.hpp"
 #include "filevault/algorithms/symmetric/camellia_gcm.hpp"
 #include "filevault/algorithms/symmetric/aria_gcm.hpp"
 #include "filevault/algorithms/symmetric/sm4_gcm.hpp"
+#include "filevault/algorithms/asymmetric/rsa.hpp"
 #include "filevault/algorithms/classical/caesar.hpp"
 #include "filevault/algorithms/classical/vigenere.hpp"
 #include "filevault/algorithms/classical/playfair.hpp"
@@ -51,6 +59,41 @@ void CryptoEngine::initialize() {
     register_algorithm(std::make_unique<algorithms::symmetric::ARIA_GCM>(192));
     register_algorithm(std::make_unique<algorithms::symmetric::ARIA_GCM>(256));
     register_algorithm(std::make_unique<algorithms::symmetric::SM4_GCM>());
+    
+    // Register non-AEAD symmetric algorithms (CBC, CTR modes)
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CBC>(128));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CBC>(192));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CBC>(256));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CTR>(128));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CTR>(192));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CTR>(256));
+    
+    // Register CFB mode algorithms
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CFB>(128));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CFB>(192));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_CFB>(256));
+    
+    // Register OFB mode algorithms
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_OFB>(128));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_OFB>(192));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_OFB>(256));
+    
+    // Register ECB mode algorithms (INSECURE - educational only)
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_ECB>(128));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_ECB>(192));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_ECB>(256));
+    
+    // Register XTS mode algorithms (disk encryption)
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_XTS>(128));
+    register_algorithm(std::make_unique<algorithms::symmetric::AES_XTS>(256));
+    
+    // Register legacy algorithms (for compatibility only)
+    register_algorithm(std::make_unique<algorithms::symmetric::TripleDES>());
+    
+    // Register asymmetric algorithms (RSA)
+    register_algorithm(std::make_unique<algorithms::asymmetric::RSA>(2048));
+    register_algorithm(std::make_unique<algorithms::asymmetric::RSA>(3072));
+    register_algorithm(std::make_unique<algorithms::asymmetric::RSA>(4096));
     
     // Register classical ciphers (educational only)
     register_algorithm(std::make_unique<algorithms::classical::Caesar>());
@@ -208,6 +251,24 @@ std::string CryptoEngine::algorithm_name(AlgorithmType type) {
         case AlgorithmType::AES_128_CBC: return "AES-128-CBC";
         case AlgorithmType::AES_192_CBC: return "AES-192-CBC";
         case AlgorithmType::AES_256_CBC: return "AES-256-CBC";
+        case AlgorithmType::AES_128_CTR: return "AES-128-CTR";
+        case AlgorithmType::AES_192_CTR: return "AES-192-CTR";
+        case AlgorithmType::AES_256_CTR: return "AES-256-CTR";
+        case AlgorithmType::AES_128_CFB: return "AES-128-CFB";
+        case AlgorithmType::AES_192_CFB: return "AES-192-CFB";
+        case AlgorithmType::AES_256_CFB: return "AES-256-CFB";
+        case AlgorithmType::AES_128_OFB: return "AES-128-OFB";
+        case AlgorithmType::AES_192_OFB: return "AES-192-OFB";
+        case AlgorithmType::AES_256_OFB: return "AES-256-OFB";
+        case AlgorithmType::AES_128_ECB: return "AES-128-ECB";
+        case AlgorithmType::AES_192_ECB: return "AES-192-ECB";
+        case AlgorithmType::AES_256_ECB: return "AES-256-ECB";
+        case AlgorithmType::AES_128_XTS: return "AES-128-XTS";
+        case AlgorithmType::AES_256_XTS: return "AES-256-XTS";
+        case AlgorithmType::TRIPLE_DES_CBC: return "3DES-CBC";
+        case AlgorithmType::RSA_2048: return "RSA-2048";
+        case AlgorithmType::RSA_3072: return "RSA-3072";
+        case AlgorithmType::RSA_4096: return "RSA-4096";
         case AlgorithmType::CHACHA20_POLY1305: return "ChaCha20-Poly1305";
         case AlgorithmType::SERPENT_256_GCM: return "Serpent-256-GCM";
         case AlgorithmType::TWOFISH_128_GCM: return "Twofish-128-GCM";
@@ -254,9 +315,48 @@ std::optional<AlgorithmType> CryptoEngine::parse_algorithm(const std::string& na
     std::string lower = name;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
     
+    // AES-GCM (AEAD)
     if (lower == "aes-128-gcm" || lower == "aes128gcm") return AlgorithmType::AES_128_GCM;
     if (lower == "aes-192-gcm" || lower == "aes192gcm") return AlgorithmType::AES_192_GCM;
     if (lower == "aes-256-gcm" || lower == "aes256gcm" || lower == "aes" || lower == "aes256") return AlgorithmType::AES_256_GCM;
+    
+    // AES-CBC (legacy, not authenticated)
+    if (lower == "aes-128-cbc" || lower == "aes128cbc") return AlgorithmType::AES_128_CBC;
+    if (lower == "aes-192-cbc" || lower == "aes192cbc") return AlgorithmType::AES_192_CBC;
+    if (lower == "aes-256-cbc" || lower == "aes256cbc") return AlgorithmType::AES_256_CBC;
+    
+    // AES-CTR (stream mode, not authenticated)
+    if (lower == "aes-128-ctr" || lower == "aes128ctr") return AlgorithmType::AES_128_CTR;
+    if (lower == "aes-192-ctr" || lower == "aes192ctr") return AlgorithmType::AES_192_CTR;
+    if (lower == "aes-256-ctr" || lower == "aes256ctr") return AlgorithmType::AES_256_CTR;
+    
+    // AES-CFB (self-synchronizing stream mode)
+    if (lower == "aes-128-cfb" || lower == "aes128cfb") return AlgorithmType::AES_128_CFB;
+    if (lower == "aes-192-cfb" || lower == "aes192cfb") return AlgorithmType::AES_192_CFB;
+    if (lower == "aes-256-cfb" || lower == "aes256cfb") return AlgorithmType::AES_256_CFB;
+    
+    // AES-OFB (output feedback stream mode)
+    if (lower == "aes-128-ofb" || lower == "aes128ofb") return AlgorithmType::AES_128_OFB;
+    if (lower == "aes-192-ofb" || lower == "aes192ofb") return AlgorithmType::AES_192_OFB;
+    if (lower == "aes-256-ofb" || lower == "aes256ofb") return AlgorithmType::AES_256_OFB;
+    
+    // AES-ECB (INSECURE - educational only)
+    if (lower == "aes-128-ecb" || lower == "aes128ecb") return AlgorithmType::AES_128_ECB;
+    if (lower == "aes-192-ecb" || lower == "aes192ecb") return AlgorithmType::AES_192_ECB;
+    if (lower == "aes-256-ecb" || lower == "aes256ecb") return AlgorithmType::AES_256_ECB;
+    
+    // AES-XTS (disk encryption mode)
+    if (lower == "aes-128-xts" || lower == "aes128xts") return AlgorithmType::AES_128_XTS;
+    if (lower == "aes-256-xts" || lower == "aes256xts" || lower == "xts") return AlgorithmType::AES_256_XTS;
+    
+    // Legacy algorithms
+    if (lower == "3des" || lower == "3des-cbc" || lower == "tripledes" || lower == "triple-des") return AlgorithmType::TRIPLE_DES_CBC;
+    
+    // RSA asymmetric encryption
+    if (lower == "rsa-2048" || lower == "rsa2048") return AlgorithmType::RSA_2048;
+    if (lower == "rsa-3072" || lower == "rsa3072") return AlgorithmType::RSA_3072;
+    if (lower == "rsa-4096" || lower == "rsa4096" || lower == "rsa") return AlgorithmType::RSA_4096;
+    
     if (lower == "chacha20-poly1305" || lower == "chacha20" || lower == "chacha") return AlgorithmType::CHACHA20_POLY1305;
     if (lower == "serpent-256-gcm" || lower == "serpent" || lower == "serpent256") return AlgorithmType::SERPENT_256_GCM;
     if (lower == "twofish-128-gcm" || lower == "twofish128") return AlgorithmType::TWOFISH_128_GCM;

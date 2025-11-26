@@ -97,12 +97,20 @@ set(CLI_SOURCES
 
 set(ALGORITHM_SOURCES
     src/algorithms/symmetric/aes_gcm.cpp
+    src/algorithms/symmetric/aes_cbc.cpp
+    src/algorithms/symmetric/aes_ctr.cpp
+    src/algorithms/symmetric/aes_cfb.cpp
+    src/algorithms/symmetric/aes_ofb.cpp
+    src/algorithms/symmetric/aes_ecb.cpp
+    src/algorithms/symmetric/aes_xts.cpp
+    src/algorithms/symmetric/triple_des.cpp
     src/algorithms/symmetric/chacha20_poly1305.cpp
     src/algorithms/symmetric/serpent_gcm.cpp
     src/algorithms/symmetric/twofish_gcm.cpp
     src/algorithms/symmetric/camellia_gcm.cpp
     src/algorithms/symmetric/aria_gcm.cpp
     src/algorithms/symmetric/sm4_gcm.cpp
+    src/algorithms/asymmetric/rsa.cpp
     src/algorithms/classical/caesar.cpp
     src/algorithms/classical/vigenere.cpp
     src/algorithms/classical/playfair.cpp
@@ -235,6 +243,27 @@ if(BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
     )
     
+    add_executable(test_non_aead_ciphers tests/unit/crypto/test_non_aead_ciphers.cpp)
+    target_link_libraries(test_non_aead_ciphers PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_non_aead_ciphers PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_non_aead_ciphers PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_aes_modes tests/unit/crypto/test_aes_modes.cpp)
+    target_link_libraries(test_aes_modes PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_aes_modes PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_aes_modes PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
+    add_executable(test_rsa tests/unit/crypto/test_rsa.cpp)
+    target_link_libraries(test_rsa PRIVATE filevault_lib Catch2::Catch2WithMain)
+    target_compile_options(test_rsa PRIVATE -Wno-error=stringop-overread)
+    set_target_properties(test_rsa PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
     # Security Tests
     add_executable(test_nonce_uniqueness tests/security/test_nonce_uniqueness.cpp)
     target_link_libraries(test_nonce_uniqueness PRIVATE filevault_lib Catch2::Catch2WithMain)
@@ -306,6 +335,9 @@ if(BUILD_TESTS)
     add_test(NAME Archive_Format COMMAND test_archive)
     add_test(NAME Twofish_GCM COMMAND test_twofish)
     add_test(NAME International_Ciphers COMMAND test_international_ciphers)
+    add_test(NAME Non_AEAD_Ciphers COMMAND test_non_aead_ciphers)
+    add_test(NAME AES_Modes COMMAND test_aes_modes)
+    add_test(NAME RSA_Encryption COMMAND test_rsa)
 endif()
 
 # Benchmarks - output to benchmarks/ directory

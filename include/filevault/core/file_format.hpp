@@ -15,8 +15,8 @@ namespace core {
  * 
  * Format structure:
  * [Magic:8][Version:2][AlgoID:1][KDFID:1][CompID:1][Reserved:3]
- * [Salt:32][KDF_Params:Variable][Nonce:12][Compressed_Flag:1]
- * [Ciphertext][Auth_Tag:16]
+ * [Salt:32][KDF_Params:Variable][NonceSize:1][Nonce:Variable][Compressed_Flag:1]
+ * [Ciphertext][Auth_Tag:16 (AEAD only)]
  * 
  * Magic: "FVAULT01" (8 bytes)
  * Version: Major.Minor (1 byte each)
@@ -26,10 +26,11 @@ namespace core {
  * Reserved: Future use (3 bytes)
  * Salt: Random salt for KDF (32 bytes)
  * KDF_Params: Variable-length KDF parameters
- * Nonce: Random nonce/IV (12 bytes for GCM)
+ * NonceSize: Size of nonce/IV in bytes (1 byte)
+ * Nonce: Random nonce/IV (variable, e.g. 12 for GCM, 16 for CBC/CTR)
  * Compressed_Flag: 0x00=No, 0x01=Yes (1 byte)
  * Ciphertext: Encrypted data
- * Auth_Tag: GCM authentication tag (16 bytes)
+ * Auth_Tag: GCM authentication tag (16 bytes, only for AEAD)
  */
 
 constexpr uint8_t FILE_FORMAT_MAGIC[8] = {'F', 'V', 'A', 'U', 'L', 'T', '0', '1'};
@@ -63,7 +64,35 @@ enum class AlgorithmID : uint8_t {
     VIGENERE = 0x11,
     PLAYFAIR = 0x12,
     SUBSTITUTION = 0x13,
-    HILL = 0x14
+    HILL = 0x14,
+    // Non-AEAD modes (CBC, CTR)
+    AES_128_CBC = 0x20,
+    AES_192_CBC = 0x21,
+    AES_256_CBC = 0x22,
+    AES_128_CTR = 0x23,
+    AES_192_CTR = 0x24,
+    AES_256_CTR = 0x25,
+    // CFB mode
+    AES_128_CFB = 0x26,
+    AES_192_CFB = 0x27,
+    AES_256_CFB = 0x28,
+    // OFB mode
+    AES_128_OFB = 0x29,
+    AES_192_OFB = 0x2A,
+    AES_256_OFB = 0x2B,
+    // ECB mode (insecure)
+    AES_128_ECB = 0x2C,
+    AES_192_ECB = 0x2D,
+    AES_256_ECB = 0x2E,
+    // XTS mode (disk encryption)
+    AES_128_XTS = 0x2F,
+    AES_256_XTS = 0x30,
+    // Legacy algorithms
+    TRIPLE_DES_CBC = 0x40,
+    // Asymmetric (RSA)
+    RSA_2048 = 0x50,
+    RSA_3072 = 0x51,
+    RSA_4096 = 0x52
 };
 
 /**

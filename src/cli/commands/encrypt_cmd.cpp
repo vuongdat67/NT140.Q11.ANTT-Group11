@@ -41,6 +41,22 @@ void EncryptCommand::setup(CLI::App& app) {
             "camellia-128-gcm", "camellia-192-gcm", "camellia-256-gcm",
             "aria-128-gcm", "aria-192-gcm", "aria-256-gcm",
             "sm4-gcm",
+            // Non-AEAD modes (CBC)
+            "aes-128-cbc", "aes-192-cbc", "aes-256-cbc",
+            // Non-AEAD modes (CTR)
+            "aes-128-ctr", "aes-192-ctr", "aes-256-ctr",
+            // Non-AEAD modes (CFB)
+            "aes-128-cfb", "aes-192-cfb", "aes-256-cfb",
+            // Non-AEAD modes (OFB)
+            "aes-128-ofb", "aes-192-ofb", "aes-256-ofb",
+            // Non-AEAD modes (ECB - INSECURE)
+            "aes-128-ecb", "aes-192-ecb", "aes-256-ecb",
+            // Disk encryption mode (XTS)
+            "aes-128-xts", "aes-256-xts",
+            // Legacy
+            "3des", "tripledes", "triple-des",
+            // Asymmetric (RSA)
+            "rsa-2048", "rsa-3072", "rsa-4096", "rsa",
             // Classical (educational)
             "caesar", "vigenere", "playfair", "substitution", "hill"
         }));
@@ -292,6 +308,13 @@ int EncryptCommand::execute() {
         
         utils::Console::info(fmt::format("Encrypted in {:.2f}ms", encrypt_result.processing_time_ms));
         
+        // For non-AEAD algorithms (CBC, CTR), use the IV/nonce from encrypt result
+        // The algorithm generates its own IV during encryption
+        std::vector<uint8_t> nonce_to_store = nonce;
+        if (encrypt_result.nonce.has_value() && !encrypt_result.nonce.value().empty()) {
+            nonce_to_store = encrypt_result.nonce.value();
+        }
+        
         // Create enhanced file header
         config.compression = compressed ? core::CompressionType::ZLIB : core::CompressionType::NONE;
         auto header = core::FileFormatHandler::create_header(
@@ -299,7 +322,7 @@ int EncryptCommand::execute() {
             kdf_type,
             config,
             salt,
-            nonce,
+            nonce_to_store,
             compressed
         );
         
