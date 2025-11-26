@@ -83,7 +83,22 @@ enum class AlgorithmType {
     VIGENERE,
     PLAYFAIR,
     SUBSTITUTION,
-    HILL
+    HILL,
+    
+    // Post-Quantum Key Encapsulation (NIST FIPS 203 - ML-KEM)
+    KYBER_512,      // ~AES-128 equivalent security
+    KYBER_768,      // ~AES-192 equivalent security
+    KYBER_1024,     // ~AES-256 equivalent security
+    
+    // Post-Quantum Digital Signatures (NIST FIPS 204 - ML-DSA)
+    DILITHIUM_2,    // ~AES-128 equivalent security
+    DILITHIUM_3,    // ~AES-192 equivalent security
+    DILITHIUM_5,    // ~AES-256 equivalent security
+    
+    // Hybrid Post-Quantum (Classic + PQC for transition period)
+    KYBER_512_HYBRID,   // Kyber-512 + X25519
+    KYBER_768_HYBRID,   // Kyber-768 + X25519
+    KYBER_1024_HYBRID   // Kyber-1024 + X25519
 };
 
 /**

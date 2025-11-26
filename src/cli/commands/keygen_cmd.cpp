@@ -6,6 +6,7 @@
 #include "filevault/cli/commands/keygen_cmd.hpp"
 #include "filevault/algorithms/asymmetric/rsa.hpp"
 #include "filevault/algorithms/asymmetric/ecc.hpp"
+#include "filevault/algorithms/pqc/post_quantum.hpp"
 #include "filevault/utils/console.hpp"
 #include "filevault/utils/file_io.hpp"
 #include <spdlog/spdlog.h>
@@ -26,7 +27,11 @@ void KeygenCommand::setup(CLI::App& app) {
         ->check(CLI::IsMember({
             "rsa-2048", "rsa-3072", "rsa-4096", "rsa",
             "ecc-p256", "ecc-p384", "ecc-p521", "ecc",
-            "ecdsa-p256", "ecdsa-p384", "ecdsa-p521"
+            "ecdsa-p256", "ecdsa-p384", "ecdsa-p521",
+            // PQC algorithms
+            "kyber-512", "kyber-768", "kyber-1024", "kyber",
+            "kyber-512-hybrid", "kyber-768-hybrid", "kyber-1024-hybrid", "kyber-hybrid",
+            "dilithium-2", "dilithium-3", "dilithium-5", "dilithium"
         }));
     
     cmd->add_option("-o,--output", output_prefix_, "Output file prefix (default: filevault_key)");
@@ -102,6 +107,46 @@ int KeygenCommand::execute() {
             public_key = keypair.public_key;
             private_key = keypair.private_key;
             algo_type = "ECC-P521";
+        } 
+        // Kyber KEM
+        else if (algo == "kyber" || algo == "kyber-768" || algo == "kyber-hybrid" || algo == "kyber-768-hybrid") {
+            algorithms::pqc::Kyber kyber(algorithms::pqc::Kyber::Variant::Kyber768);
+            auto keypair = kyber.generate_keypair();
+            public_key = keypair.public_key;
+            private_key = keypair.private_key;
+            algo_type = "Kyber-768";
+        } else if (algo == "kyber-512" || algo == "kyber-512-hybrid") {
+            algorithms::pqc::Kyber kyber(algorithms::pqc::Kyber::Variant::Kyber512);
+            auto keypair = kyber.generate_keypair();
+            public_key = keypair.public_key;
+            private_key = keypair.private_key;
+            algo_type = "Kyber-512";
+        } else if (algo == "kyber-1024" || algo == "kyber-1024-hybrid") {
+            algorithms::pqc::Kyber kyber(algorithms::pqc::Kyber::Variant::Kyber1024);
+            auto keypair = kyber.generate_keypair();
+            public_key = keypair.public_key;
+            private_key = keypair.private_key;
+            algo_type = "Kyber-1024";
+        }
+        // Dilithium Signatures
+        else if (algo == "dilithium" || algo == "dilithium-3") {
+            algorithms::pqc::Dilithium dil(algorithms::pqc::Dilithium::Variant::Dilithium3);
+            auto keypair = dil.generate_keypair();
+            public_key = keypair.public_key;
+            private_key = keypair.private_key;
+            algo_type = "Dilithium-3";
+        } else if (algo == "dilithium-2") {
+            algorithms::pqc::Dilithium dil(algorithms::pqc::Dilithium::Variant::Dilithium2);
+            auto keypair = dil.generate_keypair();
+            public_key = keypair.public_key;
+            private_key = keypair.private_key;
+            algo_type = "Dilithium-2";
+        } else if (algo == "dilithium-5") {
+            algorithms::pqc::Dilithium dil(algorithms::pqc::Dilithium::Variant::Dilithium5);
+            auto keypair = dil.generate_keypair();
+            public_key = keypair.public_key;
+            private_key = keypair.private_key;
+            algo_type = "Dilithium-5";
         } else {
             utils::Console::error(fmt::format("Unknown algorithm: {}", algorithm_));
             return 1;

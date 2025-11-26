@@ -22,7 +22,7 @@ public:
     
     std::string name() const override { return "keygen"; }
     std::string description() const override { 
-        return "Generate key pair for asymmetric encryption (RSA/ECC)"; 
+        return "Generate key pair for asymmetric/PQC encryption (RSA/ECC/Kyber/Dilithium)"; 
     }
     
     void setup(CLI::App& app) override;

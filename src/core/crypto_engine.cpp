@@ -16,6 +16,7 @@
 #include "filevault/algorithms/symmetric/sm4_gcm.hpp"
 #include "filevault/algorithms/asymmetric/rsa.hpp"
 #include "filevault/algorithms/asymmetric/ecc.hpp"
+#include "filevault/algorithms/pqc/post_quantum.hpp"
 #include "filevault/algorithms/classical/caesar.hpp"
 #include "filevault/algorithms/classical/vigenere.hpp"
 #include "filevault/algorithms/classical/playfair.hpp"
@@ -107,6 +108,11 @@ void CryptoEngine::initialize() {
     register_algorithm(std::make_unique<algorithms::classical::Playfair>());
     register_algorithm(std::make_unique<algorithms::classical::HillCipher>());
     register_algorithm(std::make_unique<algorithms::classical::SubstitutionCipher>());
+    
+    // Register Post-Quantum algorithms (NIST FIPS 203/204)
+    register_algorithm(std::make_unique<algorithms::pqc::KyberHybrid>(algorithms::pqc::Kyber::Variant::Kyber512));
+    register_algorithm(std::make_unique<algorithms::pqc::KyberHybrid>(algorithms::pqc::Kyber::Variant::Kyber768));
+    register_algorithm(std::make_unique<algorithms::pqc::KyberHybrid>(algorithms::pqc::Kyber::Variant::Kyber1024));
     
     spdlog::info("CryptoEngine initialized with {} algorithms", algorithms_.size());
 }
@@ -295,6 +301,16 @@ std::string CryptoEngine::algorithm_name(AlgorithmType type) {
         case AlgorithmType::PLAYFAIR: return "Playfair";
         case AlgorithmType::SUBSTITUTION: return "Substitution";
         case AlgorithmType::HILL: return "Hill";
+        // Post-Quantum algorithms
+        case AlgorithmType::KYBER_512: return "Kyber-512";
+        case AlgorithmType::KYBER_768: return "Kyber-768";
+        case AlgorithmType::KYBER_1024: return "Kyber-1024";
+        case AlgorithmType::DILITHIUM_2: return "Dilithium-2";
+        case AlgorithmType::DILITHIUM_3: return "Dilithium-3";
+        case AlgorithmType::DILITHIUM_5: return "Dilithium-5";
+        case AlgorithmType::KYBER_512_HYBRID: return "Kyber-512-Hybrid";
+        case AlgorithmType::KYBER_768_HYBRID: return "Kyber-768-Hybrid";
+        case AlgorithmType::KYBER_1024_HYBRID: return "Kyber-1024-Hybrid";
         default: return "Unknown";
     }
 }
@@ -388,6 +404,19 @@ std::optional<AlgorithmType> CryptoEngine::parse_algorithm(const std::string& na
     if (lower == "playfair") return AlgorithmType::PLAYFAIR;
     if (lower == "substitution" || lower == "sub") return AlgorithmType::SUBSTITUTION;
     if (lower == "hill") return AlgorithmType::HILL;
+    
+    // Post-Quantum algorithms (ML-KEM / Kyber)
+    if (lower == "kyber-512" || lower == "kyber512") return AlgorithmType::KYBER_512;
+    if (lower == "kyber-768" || lower == "kyber768") return AlgorithmType::KYBER_768;
+    if (lower == "kyber-1024" || lower == "kyber1024" || lower == "kyber") return AlgorithmType::KYBER_1024;
+    if (lower == "kyber-512-hybrid" || lower == "kyber512hybrid") return AlgorithmType::KYBER_512_HYBRID;
+    if (lower == "kyber-768-hybrid" || lower == "kyber768hybrid") return AlgorithmType::KYBER_768_HYBRID;
+    if (lower == "kyber-1024-hybrid" || lower == "kyber1024hybrid" || lower == "kyber-hybrid") return AlgorithmType::KYBER_1024_HYBRID;
+    
+    // Post-Quantum signatures (ML-DSA / Dilithium)
+    if (lower == "dilithium-2" || lower == "dilithium2") return AlgorithmType::DILITHIUM_2;
+    if (lower == "dilithium-3" || lower == "dilithium3") return AlgorithmType::DILITHIUM_3;
+    if (lower == "dilithium-5" || lower == "dilithium5" || lower == "dilithium") return AlgorithmType::DILITHIUM_5;
     
     return std::nullopt;
 }

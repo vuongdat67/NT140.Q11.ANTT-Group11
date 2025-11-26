@@ -82,6 +82,7 @@ set(CORE_SOURCES
     src/core/crypto_engine.cpp
     src/core/types.cpp
     src/core/modes.cpp
+    src/core/streaming.cpp
     src/utils/console.cpp
     src/utils/file_io.cpp
     src/utils/crypto_utils.cpp
@@ -125,6 +126,7 @@ set(ALGORITHM_SOURCES
     src/algorithms/symmetric/sm4_gcm.cpp
     src/algorithms/asymmetric/rsa.cpp
     src/algorithms/asymmetric/ecc.cpp
+    src/algorithms/pqc/post_quantum.cpp
     src/algorithms/classical/caesar.cpp
     src/algorithms/classical/vigenere.cpp
     src/algorithms/classical/playfair.cpp
@@ -380,6 +382,13 @@ if(BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
     )
     
+    # PQC (Post-Quantum Cryptography) Tests
+    add_executable(test_pqc tests/unit/crypto/test_pqc.cpp)
+    target_link_libraries(test_pqc PRIVATE filevault_lib Catch2::Catch2WithMain)
+    set_target_properties(test_pqc PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release
+    )
+    
     enable_testing()
     add_test(NAME NIST_Vectors COMMAND nist_test_vectors)
     add_test(NAME Rainbow_Table COMMAND rainbow_table_test)
@@ -401,6 +410,7 @@ if(BUILD_TESTS)
     add_test(NAME AES_Modes COMMAND test_aes_modes)
     add_test(NAME RSA_Encryption COMMAND test_rsa)
     add_test(NAME ECC_Encryption COMMAND test_ecc)
+    add_test(NAME PQC_Encryption COMMAND test_pqc)
 endif()
 
 # Benchmarks - output to benchmarks/ directory

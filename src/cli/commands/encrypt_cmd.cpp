@@ -59,6 +59,8 @@ void EncryptCommand::setup(CLI::App& app) {
             "rsa-2048", "rsa-3072", "rsa-4096", "rsa",
             // Asymmetric (ECC)
             "ecc-p256", "ecc-p384", "ecc-p521", "ecc", "p256", "p384", "p521",
+            // Post-Quantum (Kyber Hybrid - quantum-resistant)
+            "kyber-512-hybrid", "kyber-768-hybrid", "kyber-1024-hybrid", "kyber-hybrid",
             // Classical (educational)
             "caesar", "vigenere", "playfair", "substitution", "hill"
         }));
@@ -257,7 +259,7 @@ int EncryptCommand::execute() {
         auto sec_level = sec_level_opt.value();
         
         // Check if asymmetric algorithm is selected without public key
-        // RSA and ECC require public keys, not password-derived keys
+        // RSA, ECC and KyberHybrid require public keys, not password-derived keys
         bool is_asymmetric = (algo_type == core::AlgorithmType::RSA_2048 ||
                               algo_type == core::AlgorithmType::RSA_3072 ||
                               algo_type == core::AlgorithmType::RSA_4096 ||
@@ -265,11 +267,18 @@ int EncryptCommand::execute() {
                               algo_type == core::AlgorithmType::ECC_P384 ||
                               algo_type == core::AlgorithmType::ECC_P521);
         
-        if (is_asymmetric) {
-            utils::Console::warning(fmt::format(
-                "{} is an asymmetric algorithm that requires a public key file.", algorithm_));
+        bool is_pqc_hybrid = (algo_type == core::AlgorithmType::KYBER_512_HYBRID ||
+                              algo_type == core::AlgorithmType::KYBER_768_HYBRID ||
+                              algo_type == core::AlgorithmType::KYBER_1024_HYBRID);
+        
+        if (is_asymmetric || is_pqc_hybrid) {
+            std::string alt_message = is_pqc_hybrid 
+                ? "Kyber-Hybrid requires a public key file for encryption."
+                : fmt::format("{} is an asymmetric algorithm that requires a public key file.", algorithm_);
+            
+            utils::Console::warning(alt_message);
             utils::Console::warning("Password-based encryption will use AES-256-GCM instead.");
-            utils::Console::info("To use asymmetric encryption, use: filevault keygen --algorithm " + algorithm_);
+            utils::Console::info("To use asymmetric/PQC encryption, use: filevault keygen --algorithm " + algorithm_);
             
             // Fallback to AES-256-GCM for password-based encryption
             algo_type = core::AlgorithmType::AES_256_GCM;
