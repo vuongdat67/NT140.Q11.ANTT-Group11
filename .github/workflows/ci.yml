@@ -232,6 +232,9 @@ jobs:
         compiler.runtime=dynamic
         compiler.version=193
         os=Windows
+
+        [conf]
+        tools.microsoft.msbuild:vs_version=17
         "@
         $profilePath = Join-Path $env:USERPROFILE ".conan2\profiles\default"
         New-Item -ItemType Directory -Force -Path (Split-Path $profilePath -Parent) | Out-Null
@@ -312,6 +315,7 @@ jobs:
     - name: 🔨 Configure Conan Profile
       shell: msys2 {0}
       run: |
+        mkdir -p ~/.conan2/profiles
         cat > ~/.conan2/profiles/default << 'EOF'
         [settings]
         arch=x86_64
