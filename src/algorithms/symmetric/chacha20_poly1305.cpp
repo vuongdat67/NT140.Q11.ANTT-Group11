@@ -35,18 +35,18 @@ core::CryptoResult ChaCha20Poly1305::encrypt(
             return result;
         }
         
-        // Get nonce from config
-        if (!config.nonce.has_value()) {
-            result.success = false;
-            result.error_message = "Nonce must be provided in config";
-            return result;
-        }
-        
-        auto& nonce = config.nonce.value();
-        if (nonce.size() != nonce_size()) {
-            result.success = false;
-            result.error_message = "Invalid nonce size (must be 12 bytes for ChaCha20-Poly1305)";
-            return result;
+        // Generate or use provided nonce (SECURITY FIX: auto-generate unique nonce)
+        std::vector<uint8_t> nonce;
+        if (config.nonce.has_value() && config.nonce.value().size() == nonce_size()) {
+            // Allow override for testing only
+            nonce = config.nonce.value();
+            spdlog::debug("Using provided nonce (testing mode)");
+        } else {
+            // CRITICAL: Generate NEW unique nonce for THIS encryption
+            Botan::AutoSeeded_RNG rng;
+            nonce.resize(nonce_size());
+            rng.randomize(nonce.data(), nonce.size());
+            spdlog::debug("Generated new unique nonce ({} bytes)", nonce.size());
         }
         
         // Create AEAD cipher

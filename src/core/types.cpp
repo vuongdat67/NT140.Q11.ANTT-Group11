@@ -33,5 +33,39 @@ void EncryptionConfig::apply_security_level() {
     }
 }
 
+void EncryptionConfig::apply_user_mode() {
+    switch (mode) {
+        case UserMode::STUDENT:
+            // Educational mode - classical ciphers only
+            // Start with simplest cipher (Caesar)
+            algorithm = AlgorithmType::CAESAR;
+            kdf = KDFType::PBKDF2_SHA256;  // Simple KDF
+            level = SecurityLevel::WEAK;    // Fast for learning
+            compression = CompressionType::NONE;
+            break;
+            
+        case UserMode::PROFESSIONAL:
+            // Default professional settings
+            // Balance between security and performance
+            algorithm = AlgorithmType::AES_256_GCM;
+            kdf = KDFType::ARGON2ID;
+            level = SecurityLevel::MEDIUM;
+            compression = CompressionType::ZLIB;  // Fast compression
+            break;
+            
+        case UserMode::ADVANCED:
+            // Maximum security for advanced users
+            // No compromise on security
+            algorithm = AlgorithmType::AES_256_GCM;
+            kdf = KDFType::ARGON2ID;
+            level = SecurityLevel::PARANOID;
+            compression = CompressionType::LZMA;  // Best compression
+            break;
+    }
+    
+    // Apply the security level settings
+    apply_security_level();
+}
+
 } // namespace core
 } // namespace filevault

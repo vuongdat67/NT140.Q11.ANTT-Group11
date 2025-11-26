@@ -58,8 +58,15 @@ Release/
 *.encrypted
 test_output/
 
-.github/
-*.bat
-*.md
+# Note: Keep .github/ for workflows
+# .github/copilot/ - Documentation (tracked)
+# .github/workflows/ - CI/CD (tracked)
 
+# Build scripts (optional)
+# *.bat
+
+# Markdown files - TRACKED for documentation
+# *.md
+
+# Test binaries directory
 bintest/

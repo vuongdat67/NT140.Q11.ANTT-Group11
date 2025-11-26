@@ -1,0 +1,109 @@
+# FileVault Git Attributes
+# Enforce consistent line endings and encoding across platforms
+
+# Auto-detect text files and normalize line endings
+* text=auto eol=lf
+
+# Source code files - UTF-8 encoding
+*.cpp text eol=lf working-tree-encoding=UTF-8
+*.hpp text eol=lf working-tree-encoding=UTF-8
+*.h text eol=lf working-tree-encoding=UTF-8
+*.c text eol=lf working-tree-encoding=UTF-8
+*.cc text eol=lf working-tree-encoding=UTF-8
+*.cxx text eol=lf working-tree-encoding=UTF-8
+
+# Documentation - UTF-8 encoding
+*.md text eol=lf working-tree-encoding=UTF-8
+*.txt text eol=lf working-tree-encoding=UTF-8
+*.rst text eol=lf working-tree-encoding=UTF-8
+*.adoc text eol=lf working-tree-encoding=UTF-8
+
+# Configuration files - UTF-8
+*.json text eol=lf working-tree-encoding=UTF-8
+*.yaml text eol=lf working-tree-encoding=UTF-8
+*.yml text eol=lf working-tree-encoding=UTF-8
+*.toml text eol=lf working-tree-encoding=UTF-8
+*.ini text eol=lf working-tree-encoding=UTF-8
+*.cfg text eol=lf working-tree-encoding=UTF-8
+*.conf text eol=lf working-tree-encoding=UTF-8
+
+# Build files
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.txt text eol=lf
+Makefile text eol=lf
+
+# Scripts - preserve platform-specific line endings where needed
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+*.fish text eol=lf
+
+# Windows scripts - CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf working-tree-encoding=UTF-8
+
+# Git files
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitmodules text eol=lf
+
+# Binary files (do not normalize)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.gz binary
+*.bz2 binary
+*.tar binary
+*.rar binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.a binary
+*.lib binary
+*.o binary
+*.obj binary
+*.pdb binary
+*.fv binary
+*.fvlt binary
+
+# Font files
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Archives
+*.tar.gz binary
+*.tar.bz2 binary
+*.tar.xz binary
+
+# Compiled binaries
+bin/* binary
+build/* binary
+*.pyc binary
+*.class binary
+
+# Linguist overrides (for GitHub language statistics)
+*.md linguist-documentation=true
+*.txt linguist-documentation=true
+docs/* linguist-documentation=true
+examples/* linguist-vendored=false
+tests/* linguist-vendored=false
+
+# Diff settings
+*.cpp diff=cpp
+*.hpp diff=cpp
+*.h diff=cpp
+
+# Merge settings
+*.md merge=union
+CHANGELOG.md merge=union

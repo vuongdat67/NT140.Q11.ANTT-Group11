@@ -1,6 +1,7 @@
 #include "filevault/algorithms/symmetric/serpent_gcm.hpp"
 #include <botan/cipher_mode.h>
 #include <botan/hex.h>
+#include <botan/auto_rng.h>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <chrono>
@@ -52,36 +53,20 @@ core::CryptoResult Serpent_GCM::encrypt(
             };
         }
         
-        if (!config.nonce || config.nonce->size() != 12) {
-            return core::CryptoResult{
-                .success = false,
-                .error_message = fmt::format("Invalid nonce size: {} (expected 12)", 
-                                           config.nonce ? config.nonce->size() : 0),
-                .data = {},
-                .algorithm_used = type(),
-                .original_size = 0,
-                .final_size = 0,
-                .processing_time_ms = 0.0,
-                .salt = std::nullopt,
-                .nonce = std::nullopt,
-                .tag = std::nullopt
-            };
+        // SECURITY FIX: Generate or use provided nonce (auto-generate unique nonce)
+        std::vector<uint8_t> nonce;
+        if (config.nonce.has_value() && config.nonce.value().size() == 12) {
+            nonce = config.nonce.value();
+            spdlog::debug("Serpent-GCM: Using provided nonce (testing mode)");
+        } else {
+            // CRITICAL: Generate NEW unique nonce for THIS encryption
+            Botan::AutoSeeded_RNG rng;
+            nonce.resize(12);  // GCM requires 12-byte nonce
+            rng.randomize(nonce.data(), nonce.size());
+            spdlog::debug("Serpent-GCM: Generated new unique nonce ({} bytes)", nonce.size());
         }
         
-        if (plaintext.empty()) {
-            return core::CryptoResult{
-                .success = false,
-                .error_message = "Plaintext cannot be empty",
-                .data = {},
-                .algorithm_used = type(),
-                .original_size = 0,
-                .final_size = 0,
-                .processing_time_ms = 0.0,
-                .salt = std::nullopt,
-                .nonce = std::nullopt,
-                .tag = std::nullopt
-            };
-        }
+        // Note: GCM mode allows empty plaintext (authentication-only mode)
         
         auto start = std::chrono::high_resolution_clock::now();
         
@@ -89,7 +74,7 @@ core::CryptoResult Serpent_GCM::encrypt(
         auto ciphertext_with_tag = process_gcm(
             plaintext,
             key,
-            *config.nonce,
+            nonce,  // Use the generated/provided nonce
             {},  // No tag for encryption
             true
         );
@@ -132,7 +117,7 @@ core::CryptoResult Serpent_GCM::encrypt(
             .final_size = ciphertext_only.size(),
             .processing_time_ms = time_ms,
             .salt = std::nullopt,
-            .nonce = std::vector<uint8_t>(config.nonce->begin(), config.nonce->end()),
+            .nonce = std::move(nonce),  // Return the nonce that was used
             .tag = std::move(tag_only)
         };
         
@@ -206,20 +191,7 @@ core::CryptoResult Serpent_GCM::decrypt(
             };
         }
         
-        if (ciphertext.size() < 1) {
-            return core::CryptoResult{
-                .success = false,
-                .error_message = fmt::format("Ciphertext too small: {} bytes", ciphertext.size()),
-                .data = {},
-                .algorithm_used = type(),
-                .original_size = 0,
-                .final_size = 0,
-                .processing_time_ms = 0.0,
-                .salt = std::nullopt,
-                .nonce = std::nullopt,
-                .tag = std::nullopt
-            };
-        }
+        // Note: GCM mode allows empty ciphertext (authentication-only mode)
         
         auto start = std::chrono::high_resolution_clock::now();
         
