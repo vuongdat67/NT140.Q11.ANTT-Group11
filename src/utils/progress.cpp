@@ -55,7 +55,7 @@ ProgressBar::~ProgressBar() {
 void ProgressBar::set_progress(size_t progress) {
     current_progress_ = progress;
     if (bar_) {
-        bar_->set_progress(static_cast<float>(progress));
+        bar_->set_progress(progress);
     }
 }
 

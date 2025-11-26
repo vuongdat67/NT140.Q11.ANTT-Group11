@@ -2,6 +2,7 @@
 #include <zlib.h>
 // #include <bzlib.h>  // TODO: Replace with bzip3 API
 #include <lzma.h>
+#include <algorithm>
 #include <chrono>
 #include <stdexcept>
 #include <fmt/core.h>

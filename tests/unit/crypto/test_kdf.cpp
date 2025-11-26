@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include "filevault/core/crypto_engine.hpp"
+#include <algorithm>
 #include <vector>
 #include <string>
 

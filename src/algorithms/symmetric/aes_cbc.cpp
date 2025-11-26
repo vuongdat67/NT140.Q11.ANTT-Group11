@@ -183,7 +183,7 @@ core::CryptoResult AES_CBC::decrypt(
                       key_bits_, ciphertext.size(), result.data.size(), 
                       result.processing_time_ms);
         
-    } catch (const Botan::Decoding_Error& e) {
+    } catch (const Botan::Decoding_Error&) {
         result.success = false;
         result.error_message = "Decryption failed: invalid padding or corrupted data";
         spdlog::warn("AES-CBC decryption: padding error");

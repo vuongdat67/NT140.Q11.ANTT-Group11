@@ -31,6 +31,12 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Compiler flags
 if(MSVC)
     add_compile_options(/W4 /WX /utf-8)
+    # Suppress specific warnings that are false positives or intentional
+    add_compile_options(
+        /wd4101  # unreferenced local variable (catch blocks)
+        /wd4244  # conversion from 'type1' to 'type2', possible loss of data
+        /wd4267  # conversion from 'size_t' to 'type', possible loss of data  
+    )
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # GCC-specific warnings

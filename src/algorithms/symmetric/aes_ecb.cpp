@@ -181,7 +181,7 @@ core::CryptoResult AES_ECB::decrypt(
         auto end = std::chrono::high_resolution_clock::now();
         result.processing_time_ms = std::chrono::duration<double, std::milli>(end - start).count();
         
-    } catch (const std::runtime_error& e) {
+    } catch (const std::runtime_error&) {
         result.success = false;
         result.error_message = "Decryption failed: invalid padding or corrupted data";
     } catch (const std::exception& e) {

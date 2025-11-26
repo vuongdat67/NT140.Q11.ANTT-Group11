@@ -152,7 +152,7 @@ core::CryptoResult TripleDES::decrypt(
         spdlog::debug("3DES decryption: {} bytes -> {} bytes in {:.2f}ms",
                       ciphertext.size(), result.data.size(), result.processing_time_ms);
         
-    } catch (const Botan::Decoding_Error& e) {
+    } catch (const Botan::Decoding_Error&) {
         result.success = false;
         result.error_message = "Decryption failed: invalid padding or corrupted data";
         spdlog::warn("3DES decryption: padding error");
