@@ -12,6 +12,15 @@
 #include <string>
 #include <vector>
 
+// Helper function to convert string to lowercase
+std::string to_lower(const std::string& s) {
+    std::string result = s;
+    for (auto& c : result) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return result;
+}
+
 // Helper function to compute hash
 std::string compute_hash(const std::string& algo, const std::string& input) {
     auto hash_func = Botan::HashFunction::create(algo);
@@ -19,7 +28,7 @@ std::string compute_hash(const std::string& algo, const std::string& input) {
     
     hash_func->update(reinterpret_cast<const uint8_t*>(input.data()), input.size());
     auto result = hash_func->final();
-    return Botan::hex_encode(result);
+    return to_lower(Botan::hex_encode(result));
 }
 
 std::string compute_hash_bytes(const std::string& algo, const std::vector<uint8_t>& input) {
@@ -167,7 +176,7 @@ TEST_CASE("HMAC-SHA256 Test Vectors", "[hmac][sha256][rfc4231]") {
         auto result = hmac->final();
         
         std::string expected = "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7";
-        REQUIRE(Botan::hex_encode(result) == expected);
+        REQUIRE(to_lower(Botan::hex_encode(result)) == expected);
     }
     
     SECTION("Test Case 2") {
@@ -185,7 +194,7 @@ TEST_CASE("HMAC-SHA256 Test Vectors", "[hmac][sha256][rfc4231]") {
         auto result = hmac->final();
         
         std::string expected = "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843";
-        REQUIRE(Botan::hex_encode(result) == expected);
+        REQUIRE(to_lower(Botan::hex_encode(result)) == expected);
     }
 }
 

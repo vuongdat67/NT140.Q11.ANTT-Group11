@@ -340,17 +340,24 @@ TEST_CASE("LSB Steganography Security Properties", "[steganography][security]") 
         std::string secret = "Deterministic test";
         std::vector<uint8_t> secret_data(secret.begin(), secret.end());
         
+        std::vector<uint8_t> stego1;
+        std::vector<uint8_t> stego2;
+        
         // First embedding
         LSBSteganography::embed(cover_image, secret_data, stego_image, 1);
-        std::ifstream file1(stego_image, std::ios::binary);
-        std::vector<uint8_t> stego1((std::istreambuf_iterator<char>(file1)),
-                                     std::istreambuf_iterator<char>());
+        {
+            std::ifstream file1(stego_image, std::ios::binary);
+            stego1 = std::vector<uint8_t>((std::istreambuf_iterator<char>(file1)),
+                                           std::istreambuf_iterator<char>());
+        }  // file1 closed here
         
         // Second embedding (same input)
         LSBSteganography::embed(cover_image, secret_data, stego_image, 1);
-        std::ifstream file2(stego_image, std::ios::binary);
-        std::vector<uint8_t> stego2((std::istreambuf_iterator<char>(file2)),
-                                     std::istreambuf_iterator<char>());
+        {
+            std::ifstream file2(stego_image, std::ios::binary);
+            stego2 = std::vector<uint8_t>((std::istreambuf_iterator<char>(file2)),
+                                           std::istreambuf_iterator<char>());
+        }  // file2 closed here
         
         // Should be identical (deterministic)
         REQUIRE(stego1 == stego2);
@@ -368,18 +375,24 @@ TEST_CASE("LSB Steganography Security Properties", "[steganography][security]") 
         std::vector<uint8_t> data1(secret1.begin(), secret1.end());
         std::vector<uint8_t> data2(secret2.begin(), secret2.end());
         
+        std::vector<uint8_t> stego1;
+        std::vector<uint8_t> stego2;
+        
         // First message
         LSBSteganography::embed(cover_image, data1, stego_image, 1);
-        std::ifstream file1(stego_image, std::ios::binary);
-        std::vector<uint8_t> stego1((std::istreambuf_iterator<char>(file1)),
-                                     std::istreambuf_iterator<char>());
-        file1.close();
+        {
+            std::ifstream file1(stego_image, std::ios::binary);
+            stego1 = std::vector<uint8_t>((std::istreambuf_iterator<char>(file1)),
+                                           std::istreambuf_iterator<char>());
+        }  // file1 closed here
         
         // Second message
         LSBSteganography::embed(cover_image, data2, stego_image, 1);
-        std::ifstream file2(stego_image, std::ios::binary);
-        std::vector<uint8_t> stego2((std::istreambuf_iterator<char>(file2)),
-                                     std::istreambuf_iterator<char>());
+        {
+            std::ifstream file2(stego_image, std::ios::binary);
+            stego2 = std::vector<uint8_t>((std::istreambuf_iterator<char>(file2)),
+                                           std::istreambuf_iterator<char>());
+        }  // file2 closed here
         
         // Should be different
         REQUIRE(stego1 != stego2);

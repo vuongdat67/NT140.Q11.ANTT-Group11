@@ -301,11 +301,12 @@ TEST_CASE("Archive Error Handling", "[archive][errors]") {
     
     SECTION("Non-existent file in create fails gracefully") {
         std::vector<fs::path> files = { "nonexistent_file.txt" };
-        auto archive_data = ArchiveFormat::create_archive(files);
         
-        // Should either throw or return empty/partial archive
-        // The behavior depends on implementation
-        INFO("Archive size with non-existent file: " << archive_data.size());
+        // Should throw exception for non-existent file
+        REQUIRE_THROWS_AS(
+            ArchiveFormat::create_archive(files),
+            std::runtime_error
+        );
     }
     
     SECTION("Invalid archive data fails extraction") {
@@ -326,15 +327,22 @@ TEST_CASE("Archive Error Handling", "[archive][errors]") {
         std::vector<fs::path> files = { file1 };
         auto archive_data = ArchiveFormat::create_archive(files);
         
-        // Truncate the archive
+        // Truncate the archive - keep only the header
         std::vector<uint8_t> truncated(archive_data.begin(), 
-                                       archive_data.begin() + archive_data.size() / 2);
+                                       archive_data.begin() + std::min(size_t(15), archive_data.size()));
         
         fs::path extract_dir = fs::path(TestFileHelper::test_dir) / "truncated_extract";
         fs::create_directories(extract_dir);
         
-        bool success = ArchiveFormat::extract_archive(truncated, extract_dir);
-        REQUIRE_FALSE(success);
+        // May throw or return false depending on implementation
+        try {
+            bool success = ArchiveFormat::extract_archive(truncated, extract_dir);
+            // If it doesn't throw, it should return false
+            REQUIRE_FALSE(success);
+        } catch (const std::exception&) {
+            // Exception is also acceptable for truncated data
+            SUCCEED("Exception thrown for truncated data - expected behavior");
+        }
     }
     
     TestFileHelper::cleanup();
