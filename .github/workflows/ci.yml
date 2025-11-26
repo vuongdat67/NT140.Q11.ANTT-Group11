@@ -11,7 +11,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  CONAN_VERSION: 2.0.17
+  CONAN_VERSION: 2.12.0
 
 jobs:
   # ===========================================
