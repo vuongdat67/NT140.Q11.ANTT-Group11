@@ -13,7 +13,13 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
+// Linux
 #include <unistd.h>
 #include <sys/sysinfo.h>
 #endif
@@ -34,7 +40,19 @@ size_t StreamingCrypto::get_recommended_chunk_size() {
     if (GlobalMemoryStatusEx(&status)) {
         available_memory = static_cast<size_t>(status.ullAvailPhys);
     }
+#elif defined(__APPLE__)
+    // macOS: Use mach API to get free memory
+    mach_port_t host_port = mach_host_self();
+    vm_size_t page_size;
+    vm_statistics64_data_t vm_stats;
+    mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
+    
+    if (host_page_size(host_port, &page_size) == KERN_SUCCESS &&
+        host_statistics64(host_port, HOST_VM_INFO64, (host_info64_t)&vm_stats, &count) == KERN_SUCCESS) {
+        available_memory = static_cast<size_t>(vm_stats.free_count) * page_size;
+    }
 #else
+    // Linux
     struct sysinfo info;
     if (sysinfo(&info) == 0) {
         available_memory = info.freeram * info.mem_unit;
