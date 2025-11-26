@@ -160,43 +160,38 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: 🛠️ Install GCC-13 with sanitizers
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-13 g++-13
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+
     - name: 📦 Install Conan
       run: |
         pip install conan==${{ env.CONAN_VERSION }}
-        conan profile detect --force
-
-    - name: 🛠️ Install Clang with sanitizers
-      run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod +x llvm.sh
-        sudo ./llvm.sh 17
-        sudo apt-get install -y libc++-17-dev libc++abi-17-dev
 
     - name: 📥 Cache Conan packages
       uses: actions/cache@v4
       with:
         path: ~/.conan2
-        key: conan-asan-${{ hashFiles('conanfile.txt') }}
-        restore-keys: conan-asan-
+        key: conan-asan-gcc-${{ hashFiles('conanfile.txt') }}
+        restore-keys: conan-asan-gcc-
 
     - name: 🔨 Configure Conan Profile with Sanitizers
       run: |
+        mkdir -p ~/.conan2/profiles
         cat > ~/.conan2/profiles/default << 'EOF'
         [settings]
         arch=x86_64
         build_type=Debug
-        compiler=clang
+        compiler=gcc
         compiler.cppstd=20
-        compiler.libcxx=libc++
-        compiler.version=17
+        compiler.libcxx=libstdc++11
+        compiler.version=13
         os=Linux
-        
-        [conf]
-        tools.build:cxxflags=["-fsanitize=address", "-fno-omit-frame-pointer"]
-        tools.build:cflags=["-fsanitize=address", "-fno-omit-frame-pointer"]
-        tools.build:sharedlinkflags=["-fsanitize=address"]
-        tools.build:exelinkflags=["-fsanitize=address"]
         EOF
+        cat ~/.conan2/profiles/default
 
     - name: 📦 Install dependencies
       run: |
@@ -207,8 +202,6 @@ jobs:
     - name: 🔨 Configure & Build with ASan
       run: |
         cd build
-        export CC=clang-17
-        export CXX=clang++-17
         cmake .. -G "Unix Makefiles" \
           -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_TOOLCHAIN_FILE=build/Debug/generators/conan_toolchain.cmake \
