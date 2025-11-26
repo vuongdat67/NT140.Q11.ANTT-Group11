@@ -318,19 +318,21 @@ jobs:
         # Install Conan
         pip install --break-system-packages conan==${{ env.CONAN_VERSION }}
         
-        # Detect profile (tạo trong Windows path)
-        conan profile detect --force
+        # Tạo profile thủ công cho MinGW GCC (KHÔNG dùng detect vì nó sẽ detect MSVC)
+        mkdir -p ~/.conan2/profiles
+        cat > ~/.conan2/profiles/default << 'EOF'
+        [settings]
+        arch=x86_64
+        build_type=Release
+        compiler=gcc
+        compiler.cppstd=20
+        compiler.libcxx=libstdc++11
+        compiler.version=14
+        os=Windows
+        EOF
         
-        # Hiển thị profile bằng conan command thay vì cat
-        echo "=== Detected Profile ==="
-        conan profile show default
-        
-        # Update các settings cần thiết
-        conan profile update settings.compiler.cppstd=20 default
-        conan profile update settings.build_type=Release default
-        
-        echo "=== Updated Profile ==="
-        conan profile show default
+        echo "=== MinGW GCC Profile ==="
+        cat ~/.conan2/profiles/default
 
     - name: 📦 Install dependencies
       shell: msys2 {0}
