@@ -12,6 +12,10 @@
 - **International Standards**: Camellia-GCM, ARIA-GCM (Korea), SM4-GCM (China)
 - **Legacy Support**: AES-CBC/CTR/CFB/OFB/XTS, 3DES (for compatibility)
 - **Asymmetric**: RSA (2048/3072/4096), ECC (P-256/P-384/P-521)
+- **Post-Quantum Cryptography (PQC)**: 
+  - Kyber-512/768/1024 (ML-KEM) - Key encapsulation
+  - Dilithium-2/3/5 (ML-DSA) - Digital signatures
+  - KyberHybrid - Quantum-resistant hybrid encryption
 - **Classical** (educational): Caesar, Vigenère, Playfair, Hill, Substitution
 
 ### 🔑 Key Derivation
@@ -87,7 +91,7 @@ filevault encrypt file.txt --mode advanced   # ChaCha20-Poly1305, max security
 
 ### Asymmetric Encryption
 ```bash
-# Generate key pair
+# Generate RSA key pair
 filevault keygen --algorithm rsa-4096 --output mykey
 
 # Encrypt with public key
@@ -95,6 +99,21 @@ filevault encrypt secret.txt --pubkey mykey.pub
 
 # Decrypt with private key
 filevault decrypt secret.txt.fvlt --privkey mykey.pem
+```
+
+### Post-Quantum Cryptography (PQC)
+```bash
+# Generate Kyber keypair (quantum-resistant)
+filevault keygen --algorithm kyber-1024 --output quantum-key
+
+# Encrypt with Kyber-Hybrid (combines classical + PQC)
+filevault encrypt secret.txt --algorithm kyber-1024-hybrid
+
+# Generate Dilithium signing keypair
+filevault keygen --algorithm dilithium-5 --output dilithium-key
+
+# Hybrid encryption (recommended for quantum threat)
+filevault encrypt data.zip -a kyber-1024-hybrid
 ```
 
 ### Steganography
@@ -187,6 +206,18 @@ See [docs/BUILD.md](docs/BUILD.md) for detailed instructions.
 | ARIA-256-GCM | 256-bit | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Korea standard |
 | SM4-GCM | 128-bit | ⚡⚡⚡ | ⭐⭐⭐⭐ | China standard |
 
+### Asymmetric & Post-Quantum
+
+| Algorithm | Key Size | Type | Security | Quantum Resistant |
+|-----------|----------|------|----------|-------------------|
+| RSA-4096 | 4096-bit | Classical | ⭐⭐⭐⭐ | ❌ Vulnerable |
+| ECC-P521 | 521-bit | Classical | ⭐⭐⭐⭐⭐ | ❌ Vulnerable |
+| Kyber-512 | N/A | PQC KEM | ⭐⭐⭐⭐ | ✅ NIST Level 1 |
+| Kyber-768 | N/A | PQC KEM | ⭐⭐⭐⭐⭐ | ✅ NIST Level 3 |
+| Kyber-1024 | N/A | PQC KEM | ⭐⭐⭐⭐⭐ | ✅ NIST Level 5 |
+| KyberHybrid | Combined | PQC+AES | ⭐⭐⭐⭐⭐ | ✅ Defense in depth |
+| Dilithium-5 | N/A | PQC Signature | ⭐⭐⭐⭐⭐ | ✅ NIST Level 5 |
+
 ### Key Derivation
 
 | KDF | Memory | Speed | Resistance |
@@ -194,6 +225,24 @@ See [docs/BUILD.md](docs/BUILD.md) for detailed instructions.
 | Argon2id | 64MB+ | Slow | GPU, ASIC |
 | Scrypt | 32MB+ | Slow | GPU |
 | PBKDF2 | Minimal | Fast | Brute force only |
+
+### Benchmark Results (1 MB data)
+
+**Symmetric Encryption:**
+- AES-256-GCM: ~700 MB/s (hardware accelerated)
+- ChaCha20-Poly1305: ~600 MB/s (software optimized)
+- Kyber-1024-Hybrid: ~650 MB/s (PQC + AES-GCM)
+
+**Asymmetric Operations:**
+- RSA-4096 Keygen: ~1.7 seconds
+- ECC-P521 Keygen: ~10 ms
+- Kyber-1024 Keygen: ~0.4 ms ⚡
+
+**PQC Performance:**
+- Kyber-1024 KEM Encapsulation: ~0.6 ms
+- Kyber-1024 KEM Decapsulation: ~0.8 ms
+- Dilithium-5 Sign: ~1.6 ms
+- Dilithium-5 Verify: ~0.8 ms
 
 ---
 

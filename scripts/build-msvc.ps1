@@ -34,21 +34,22 @@ Write-Host "Build Type: $BuildType" -ForegroundColor Yellow
 if ($Clean) {
     Write-Host "Cleaning build directory..." -ForegroundColor Yellow
     Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+    Remove-Item CMakeUserPresets.json -ErrorAction SilentlyContinue
 }
 
-# Create build directory
-New-Item -ItemType Directory -Force -Path build | Out-Null
-Set-Location build
+# Create build directory structure
+$buildDir = "build/build/$BuildType"
+New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
-# Run in VS environment
+# Run in VS environment - fix: configure from project root
 $commands = @(
-    "conan install .. --output-folder=. --build=missing -pr msvc",
+    "conan install . --output-folder=build/build/$BuildType/generators --build=missing -pr msvc",
     "cmake --preset conan-$($BuildType.ToLower()) -DBUILD_TESTS=ON",
-    "cmake --build build/$BuildType --parallel $env:NUMBER_OF_PROCESSORS"
+    "cmake --build build/build/$BuildType --parallel $env:NUMBER_OF_PROCESSORS"
 )
 
 if ($Test) {
-    $commands += "ctest --test-dir build/$BuildType --output-on-failure -j $env:NUMBER_OF_PROCESSORS"
+    $commands += "ctest --test-dir build/build/$BuildType --output-on-failure -j $env:NUMBER_OF_PROCESSORS"
 }
 
 $script = $commands -join " && "
@@ -60,7 +61,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host " Build Successful!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "Binary: build\bin\$($BuildType.ToLower())\filevault.exe" -ForegroundColor White
+    Write-Host "Binary: build/build/$BuildType/bin/filevault.exe" -ForegroundColor White
 } else {
     Write-Host "`n❌ Build Failed!" -ForegroundColor Red
     exit 1

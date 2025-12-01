@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="16" fill="#1e1e1e"/>
+  
+  <!-- Shield outline -->
+  <path d="M64 12 L108 28 L108 60 C108 88 88 108 64 116 C40 108 20 88 20 60 L20 28 Z" 
+        fill="none" stroke="#4fc3f7" stroke-width="4"/>
+  
+  <!-- Shield fill -->
+  <path d="M64 16 L104 30 L104 60 C104 85 86 104 64 112 C42 104 24 85 24 60 L24 30 Z" 
+        fill="#0d47a1" opacity="0.5"/>
+  
+  <!-- Lock body -->
+  <rect x="46" y="56" width="36" height="32" rx="4" fill="#4fc3f7"/>
+  
+  <!-- Lock shackle -->
+  <path d="M52 56 L52 44 C52 36 57 32 64 32 C71 32 76 36 76 44 L76 56" 
+        fill="none" stroke="#4fc3f7" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Keyhole -->
+  <circle cx="64" cy="68" r="5" fill="#1e1e1e"/>
+  <rect x="62" y="68" width="4" height="12" fill="#1e1e1e"/>
+  
+  <!-- Quantum sparkles -->
+  <circle cx="32" cy="40" r="2" fill="#7c4dff"/>
+  <circle cx="96" cy="40" r="2" fill="#7c4dff"/>
+  <circle cx="64" cy="100" r="2" fill="#7c4dff"/>
+  <circle cx="40" cy="80" r="1.5" fill="#7c4dff"/>
+  <circle cx="88" cy="80" r="1.5" fill="#7c4dff"/>
+</svg>

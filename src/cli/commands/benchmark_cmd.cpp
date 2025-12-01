@@ -1,6 +1,6 @@
 /**
  * @file benchmark_cmd.cpp
- * @brief Enhanced benchmark command with all algorithms
+ * @brief Enhanced benchmark command with all algorithms and tabulate tables
  */
 
 #include "filevault/cli/commands/benchmark_cmd.hpp"
@@ -11,6 +11,7 @@
 #include "filevault/algorithms/asymmetric/rsa.hpp"
 #include "filevault/algorithms/asymmetric/ecc.hpp"
 #include <spdlog/spdlog.h>
+#include <tabulate/table.hpp>
 #include <chrono>
 #include <iomanip>
 #include <fstream>
@@ -20,6 +21,40 @@
 
 namespace filevault {
 namespace cli {
+
+namespace {
+
+tabulate::Table create_benchmark_table(const std::vector<std::string>& headers) {
+    tabulate::Table table;
+    tabulate::Table::Row_t header_row;
+    for (const auto& h : headers) {
+        header_row.push_back(h);
+    }
+    table.add_row(header_row);
+    
+    table[0].format()
+        .font_color(tabulate::Color::cyan)
+        .font_align(tabulate::FontAlign::center)
+        .font_style({tabulate::FontStyle::bold});
+    
+    return table;
+}
+
+void print_benchmark_section(const std::string& title, const std::string& emoji = "") {
+    fmt::print("\n");
+    fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::cyan), 
+              "{} {}\n", emoji, title);
+}
+
+std::string format_mbps(double mbps) {
+    return fmt::format("{:.2f} MB/s", mbps);
+}
+
+std::string format_ms(double ms) {
+    return fmt::format("{:.2f} ms", ms);
+}
+
+} // anonymous namespace
 
 BenchmarkCommand::BenchmarkCommand(core::CryptoEngine& engine)
     : engine_(engine) {
@@ -99,54 +134,41 @@ std::string BenchmarkCommand::get_platform_info() {
 
 void BenchmarkCommand::benchmark_symmetric(nlohmann::json& json_results) {
     if (!json_output_) {
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        fmt::print("🔐 SYMMETRIC ENCRYPTION ALGORITHMS\n");
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+        print_benchmark_section("SYMMETRIC ENCRYPTION ALGORITHMS", "🔐");
     }
     
     json_results["symmetric"] = nlohmann::json::array();
     
-    // AEAD Algorithms - ALL registered
+    // AEAD Algorithms
     if (!json_output_) {
-        fmt::print("📦 AEAD (Authenticated Encryption):\n");
-        fmt::print("┌{:─<24}┬{:─<14}┬{:─<14}┬{:─<14}┐\n", "", "", "", "");
-        fmt::print("│ {:<22} │ {:<12} │ {:<12} │ {:<12} │\n", 
-                   "Algorithm", "Encrypt", "Decrypt", "Notes");
-        fmt::print("├{:─<24}┼{:─<14}┼{:─<14}┼{:─<14}┤\n", "", "", "", "");
+        fmt::print("\n📦 AEAD (Authenticated Encryption):\n");
     }
     
+    tabulate::Table aead_table = create_benchmark_table({"Algorithm", "Encrypt", "Decrypt", "Notes"});
+    
     std::vector<std::pair<core::AlgorithmType, std::string>> aead_algos = {
-        // AES-GCM (all key sizes)
         {core::AlgorithmType::AES_128_GCM, "NIST Standard"},
         {core::AlgorithmType::AES_192_GCM, "NIST Standard"},
         {core::AlgorithmType::AES_256_GCM, "Recommended"},
-        // ChaCha20-Poly1305
         {core::AlgorithmType::CHACHA20_POLY1305, "RFC 8439"},
-        // Serpent
         {core::AlgorithmType::SERPENT_256_GCM, "AES Finalist"},
-        // Twofish (all key sizes)
         {core::AlgorithmType::TWOFISH_128_GCM, "AES Finalist"},
         {core::AlgorithmType::TWOFISH_192_GCM, "AES Finalist"},
         {core::AlgorithmType::TWOFISH_256_GCM, "AES Finalist"},
-        // Camellia (all key sizes)
         {core::AlgorithmType::CAMELLIA_128_GCM, "ISO 18033-3"},
         {core::AlgorithmType::CAMELLIA_192_GCM, "ISO 18033-3"},
         {core::AlgorithmType::CAMELLIA_256_GCM, "ISO 18033-3"},
-        // ARIA (all key sizes)
         {core::AlgorithmType::ARIA_128_GCM, "Korean Std"},
         {core::AlgorithmType::ARIA_192_GCM, "Korean Std"},
         {core::AlgorithmType::ARIA_256_GCM, "Korean Std"},
-        // SM4
         {core::AlgorithmType::SM4_GCM, "Chinese Std"},
     };
     
     for (const auto& [algo_type, notes] : aead_algos) {
         auto result = benchmark_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<22} │ {:>10.2f} │ {:>10.2f} │ {:<12} │\n",
-                           result.algorithm, result.encrypt_mbps, result.decrypt_mbps, notes);
-            }
+            aead_table.add_row({result.algorithm, format_mbps(result.encrypt_mbps), 
+                               format_mbps(result.decrypt_mbps), notes});
             json_results["symmetric"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "AEAD"},
@@ -159,53 +181,50 @@ void BenchmarkCommand::benchmark_symmetric(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<24}┴{:─<14}┴{:─<14}┴{:─<14}┘\n", "", "", "", "");
+        std::cout << aead_table << std::endl;
     }
     
-    // Non-AEAD Block Cipher Modes - ALL registered
+    // Non-AEAD Block Cipher Modes
     if (!json_output_) {
         fmt::print("\n📦 Block Cipher Modes (Non-AEAD):\n");
-        fmt::print("┌{:─<24}┬{:─<14}┬{:─<14}┬{:─<14}┐\n", "", "", "", "");
-        fmt::print("│ {:<22} │ {:<12} │ {:<12} │ {:<12} │\n", 
-                   "Algorithm", "Encrypt", "Decrypt", "Notes");
-        fmt::print("├{:─<24}┼{:─<14}┼{:─<14}┼{:─<14}┤\n", "", "", "", "");
     }
     
+    tabulate::Table block_table = create_benchmark_table({"Algorithm", "Encrypt", "Decrypt", "Notes"});
+    
     std::vector<std::pair<core::AlgorithmType, std::string>> block_modes = {
-        // CBC mode
         {core::AlgorithmType::AES_128_CBC, "Legacy"},
         {core::AlgorithmType::AES_192_CBC, "Legacy"},
         {core::AlgorithmType::AES_256_CBC, "Legacy"},
-        // CTR mode
         {core::AlgorithmType::AES_128_CTR, "Stream"},
         {core::AlgorithmType::AES_192_CTR, "Stream"},
         {core::AlgorithmType::AES_256_CTR, "Stream"},
-        // CFB mode
         {core::AlgorithmType::AES_128_CFB, "Stream"},
         {core::AlgorithmType::AES_192_CFB, "Stream"},
         {core::AlgorithmType::AES_256_CFB, "Stream"},
-        // OFB mode
         {core::AlgorithmType::AES_128_OFB, "Stream"},
         {core::AlgorithmType::AES_192_OFB, "Stream"},
         {core::AlgorithmType::AES_256_OFB, "Stream"},
-        // XTS mode (disk encryption)
         {core::AlgorithmType::AES_128_XTS, "Disk Enc"},
         {core::AlgorithmType::AES_256_XTS, "Disk Enc"},
-        // ECB mode (INSECURE)
         {core::AlgorithmType::AES_128_ECB, "INSECURE"},
         {core::AlgorithmType::AES_192_ECB, "INSECURE"},
         {core::AlgorithmType::AES_256_ECB, "INSECURE"},
-        // Legacy
         {core::AlgorithmType::TRIPLE_DES_CBC, "Legacy"},
     };
     
+    size_t row_index = 1;
     for (const auto& [algo_type, notes] : block_modes) {
         auto result = benchmark_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<22} │ {:>10.2f} │ {:>10.2f} │ {:<12} │\n",
-                           result.algorithm, result.encrypt_mbps, result.decrypt_mbps, notes);
+            block_table.add_row({result.algorithm, format_mbps(result.encrypt_mbps), 
+                                format_mbps(result.decrypt_mbps), notes});
+            
+            // Mark insecure algorithms in red
+            if (notes == "INSECURE") {
+                block_table[row_index].format().font_color(tabulate::Color::red);
             }
+            row_index++;
+            
             json_results["symmetric"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "Block"},
@@ -218,20 +237,16 @@ void BenchmarkCommand::benchmark_symmetric(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<24}┴{:─<14}┴{:─<14}┴{:─<14}┘\n\n", "", "", "", "");
+        std::cout << block_table << std::endl;
     }
 }
 
 void BenchmarkCommand::benchmark_asymmetric(nlohmann::json& json_results) {
     if (!json_output_) {
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        fmt::print("🔑 ASYMMETRIC ENCRYPTION ALGORITHMS\n");
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-        fmt::print("┌{:─<26}┬{:─<14}┬{:─<14}┬{:─<14}┬{:─<12}┐\n", "", "", "", "", "");
-        fmt::print("│ {:<24} │ {:^12} │ {:^12} │ {:^12} │ {:<10} │\n", 
-                   "Algorithm", "KeyGen", "Encrypt", "Decrypt", "Security");
-        fmt::print("├{:─<26}┼{:─<14}┼{:─<14}┼{:─<14}┼{:─<12}┤\n", "", "", "", "", "");
+        print_benchmark_section("ASYMMETRIC ENCRYPTION ALGORITHMS", "🔑");
     }
+    
+    tabulate::Table table = create_benchmark_table({"Algorithm", "KeyGen", "Encrypt", "Decrypt", "Security"});
     
     json_results["asymmetric"] = nlohmann::json::array();
     
@@ -245,10 +260,8 @@ void BenchmarkCommand::benchmark_asymmetric(nlohmann::json& json_results) {
     for (const auto& [algo_type, security] : rsa_algos) {
         auto result = benchmark_asymmetric_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<24} │ {:>10.1f}ms │ {:>10.2f}ms │ {:>10.2f}ms │ {:<10} │\n",
-                           result.algorithm, result.keygen_ms, result.encrypt_ms, result.decrypt_ms, security);
-            }
+            table.add_row({result.algorithm, format_ms(result.keygen_ms), 
+                          format_ms(result.encrypt_ms), format_ms(result.decrypt_ms), security});
             json_results["asymmetric"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "RSA"},
@@ -270,10 +283,8 @@ void BenchmarkCommand::benchmark_asymmetric(nlohmann::json& json_results) {
     for (const auto& [algo_type, security] : ecc_algos) {
         auto result = benchmark_asymmetric_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<24} │ {:>10.1f}ms │ {:>10.2f}ms │ {:>10.2f}ms │ {:<10} │\n",
-                           result.algorithm, result.keygen_ms, result.encrypt_ms, result.decrypt_ms, security);
-            }
+            table.add_row({result.algorithm, format_ms(result.keygen_ms), 
+                          format_ms(result.encrypt_ms), format_ms(result.decrypt_ms), security});
             json_results["asymmetric"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "ECC"},
@@ -286,27 +297,23 @@ void BenchmarkCommand::benchmark_asymmetric(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<26}┴{:─<14}┴{:─<14}┴{:─<14}┴{:─<12}┘\n\n", "", "", "", "", "");
+        std::cout << table << std::endl;
     }
 }
 
 void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     if (!json_output_) {
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        fmt::print("🔮 POST-QUANTUM CRYPTOGRAPHY (NIST Standards)\n");
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+        print_benchmark_section("POST-QUANTUM CRYPTOGRAPHY (NIST Standards)", "🔮");
     }
     
     json_results["pqc"] = nlohmann::json::array();
     
     // Kyber KEM
     if (!json_output_) {
-        fmt::print("🔐 ML-KEM (Kyber) - Key Encapsulation:\n");
-        fmt::print("┌{:─<20}┬{:─<14}┬{:─<14}┬{:─<14}┬{:─<12}┐\n", "", "", "", "", "");
-        fmt::print("│ {:<18} │ {:^12} │ {:^12} │ {:^12} │ {:<10} │\n", 
-                   "Variant", "KeyGen", "Encaps", "Decaps", "Security");
-        fmt::print("├{:─<20}┼{:─<14}┼{:─<14}┼{:─<14}┼{:─<12}┤\n", "", "", "", "", "");
+        fmt::print("\n🔐 ML-KEM (Kyber) - Key Encapsulation:\n");
     }
+    
+    tabulate::Table kyber_table = create_benchmark_table({"Variant", "KeyGen", "Encaps", "Decaps", "Security"});
     
     std::vector<std::pair<core::AlgorithmType, std::string>> kyber_algos = {
         {core::AlgorithmType::KYBER_512, "NIST-1"},
@@ -317,10 +324,8 @@ void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     for (const auto& [algo_type, security] : kyber_algos) {
         auto result = benchmark_pqc_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<18} │ {:>10.2f}ms │ {:>10.2f}ms │ {:>10.2f}ms │ {:<10} │\n",
-                           result.algorithm, result.keygen_ms, result.encaps_ms, result.decaps_ms, security);
-            }
+            kyber_table.add_row({result.algorithm, format_ms(result.keygen_ms), 
+                                format_ms(result.encaps_ms), format_ms(result.decaps_ms), security});
             json_results["pqc"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "KEM"},
@@ -333,17 +338,15 @@ void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<20}┴{:─<14}┴{:─<14}┴{:─<14}┴{:─<12}┘\n", "", "", "", "", "");
+        std::cout << kyber_table << std::endl;
     }
     
     // KyberHybrid
     if (!json_output_) {
         fmt::print("\n🔐 ML-KEM Hybrid (Kyber + AES-256-GCM):\n");
-        fmt::print("┌{:─<20}┬{:─<14}┬{:─<14}┬{:─<12}┐\n", "", "", "", "");
-        fmt::print("│ {:<18} │ {:^12} │ {:^12} │ {:<10} │\n", 
-                   "Variant", "Encrypt", "Decrypt", "Security");
-        fmt::print("├{:─<20}┼{:─<14}┼{:─<14}┼{:─<12}┤\n", "", "", "", "");
     }
+    
+    tabulate::Table hybrid_table = create_benchmark_table({"Variant", "Encrypt", "Decrypt", "Security"});
     
     std::vector<std::pair<core::AlgorithmType, std::string>> hybrid_algos = {
         {core::AlgorithmType::KYBER_512_HYBRID, "NIST-1"},
@@ -354,10 +357,8 @@ void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     for (const auto& [algo_type, security] : hybrid_algos) {
         auto result = benchmark_hybrid_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<18} │ {:>10.2f} │ {:>10.2f} │ {:<10} │\n",
-                           result.algorithm, result.encrypt_mbps, result.decrypt_mbps, security);
-            }
+            hybrid_table.add_row({result.algorithm, format_mbps(result.encrypt_mbps), 
+                                 format_mbps(result.decrypt_mbps), security});
             json_results["pqc"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "Hybrid"},
@@ -369,17 +370,15 @@ void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<20}┴{:─<14}┴{:─<14}┴{:─<12}┘\n", "", "", "", "");
+        std::cout << hybrid_table << std::endl;
     }
     
     // Dilithium Signatures
     if (!json_output_) {
         fmt::print("\n✍️  ML-DSA (Dilithium) - Digital Signatures:\n");
-        fmt::print("┌{:─<20}┬{:─<14}┬{:─<14}┬{:─<14}┬{:─<12}┐\n", "", "", "", "", "");
-        fmt::print("│ {:<18} │ {:^12} │ {:^12} │ {:^12} │ {:<10} │\n", 
-                   "Variant", "KeyGen", "Sign", "Verify", "Security");
-        fmt::print("├{:─<20}┼{:─<14}┼{:─<14}┼{:─<14}┼{:─<12}┤\n", "", "", "", "", "");
     }
+    
+    tabulate::Table dil_table = create_benchmark_table({"Variant", "KeyGen", "Sign", "Verify", "Security"});
     
     std::vector<std::pair<core::AlgorithmType, std::string>> dilithium_algos = {
         {core::AlgorithmType::DILITHIUM_2, "NIST-2"},
@@ -390,10 +389,8 @@ void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     for (const auto& [algo_type, security] : dilithium_algos) {
         auto result = benchmark_signature_algorithm(algo_type);
         if (result.success) {
-            if (!json_output_) {
-                fmt::print("│ {:<18} │ {:>10.2f}ms │ {:>10.2f}ms │ {:>10.2f}ms │ {:<10} │\n",
-                           result.algorithm, result.keygen_ms, result.sign_ms, result.verify_ms, security);
-            }
+            dil_table.add_row({result.algorithm, format_ms(result.keygen_ms), 
+                              format_ms(result.sign_ms), format_ms(result.verify_ms), security});
             json_results["pqc"].push_back({
                 {"algorithm", result.algorithm},
                 {"type", "Signature"},
@@ -406,20 +403,16 @@ void BenchmarkCommand::benchmark_pqc(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<20}┴{:─<14}┴{:─<14}┴{:─<14}┴{:─<12}┘\n\n", "", "", "", "", "");
+        std::cout << dil_table << std::endl;
     }
 }
 
 void BenchmarkCommand::benchmark_kdf(nlohmann::json& json_results) {
     if (!json_output_) {
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        fmt::print("🔑 KEY DERIVATION FUNCTIONS\n");
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-        fmt::print("┌{:─<20}┬{:─<14}┬{:─<14}┬{:─<14}┐\n", "", "", "", "");
-        fmt::print("│ {:<18} │ {:^12} │ {:^12} │ {:^12} │\n", 
-                   "Algorithm", "Time (ms)", "Rate (/s)", "Memory");
-        fmt::print("├{:─<20}┼{:─<14}┼{:─<14}┼{:─<14}┤\n", "", "", "", "");
+        print_benchmark_section("KEY DERIVATION FUNCTIONS", "🔑");
     }
+    
+    tabulate::Table table = create_benchmark_table({"Algorithm", "Time (ms)", "Rate (/s)", "Memory"});
     
     json_results["kdf"] = nlohmann::json::array();
     
@@ -453,10 +446,7 @@ void BenchmarkCommand::benchmark_kdf(nlohmann::json& json_results) {
         double avg_time = std::accumulate(times.begin(), times.end(), 0.0) / times.size();
         double rate = 1000.0 / avg_time;
         
-        if (!json_output_) {
-            fmt::print("│ {:<18} │ {:>10.2f} │ {:>10.1f} │ {:^12} │\n",
-                      name, avg_time, rate, memory);
-        }
+        table.add_row({name, format_ms(avg_time), fmt::format("{:.1f}", rate), memory});
         
         json_results["kdf"].push_back({
             {"algorithm", name},
@@ -467,20 +457,16 @@ void BenchmarkCommand::benchmark_kdf(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<20}┴{:─<14}┴{:─<14}┴{:─<14}┘\n\n", "", "", "", "");
+        std::cout << table << std::endl;
     }
 }
 
 void BenchmarkCommand::benchmark_compression(nlohmann::json& json_results) {
     if (!json_output_) {
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        fmt::print("📦 COMPRESSION ALGORITHMS\n");
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-        fmt::print("┌{:─<18}┬{:─<14}┬{:─<14}┬{:─<12}┐\n", "", "", "", "");
-        fmt::print("│ {:<16} │ {:^12} │ {:^12} │ {:^10} │\n", 
-                   "Algorithm", "Compress", "Decompress", "Ratio");
-        fmt::print("├{:─<18}┼{:─<14}┼{:─<14}┼{:─<12}┤\n", "", "", "", "");
+        print_benchmark_section("COMPRESSION ALGORITHMS", "📦");
     }
+    
+    tabulate::Table table = create_benchmark_table({"Algorithm", "Compress", "Decompress", "Ratio"});
     
     json_results["compression"] = nlohmann::json::array();
     
@@ -529,10 +515,8 @@ void BenchmarkCommand::benchmark_compression(nlohmann::json& json_results) {
             double decompress_mbps = (data_size_ / 1024.0 / 1024.0) / (avg_decompress / 1000.0);
             double ratio = static_cast<double>(test_data.size()) / compressed_result.data.size();
             
-            if (!json_output_) {
-                fmt::print("│ {:<16} │ {:>10.2f} │ {:>10.2f} │ {:>8.2f}x │\n",
-                           name, compress_mbps, decompress_mbps, ratio);
-            }
+            table.add_row({name, format_mbps(compress_mbps), format_mbps(decompress_mbps), 
+                          fmt::format("{:.2f}x", ratio)});
             
             json_results["compression"].push_back({
                 {"algorithm", name},
@@ -541,27 +525,21 @@ void BenchmarkCommand::benchmark_compression(nlohmann::json& json_results) {
                 {"ratio", ratio}
             });
         } catch (const std::exception& e) {
-            if (!json_output_) {
-                fmt::print("│ {:<16} │ Error: {:<37} │\n", name, e.what());
-            }
+            table.add_row({name, "Error", e.what(), "-"});
         }
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<18}┴{:─<14}┴{:─<14}┴{:─<12}┘\n\n", "", "", "", "");
+        std::cout << table << std::endl;
     }
 }
 
 void BenchmarkCommand::benchmark_hash(nlohmann::json& json_results) {
     if (!json_output_) {
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        fmt::print("🔢 HASH FUNCTIONS\n");
-        fmt::print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-        fmt::print("┌{:─<18}┬{:─<18}┬{:─<14}┐\n", "", "", "");
-        fmt::print("│ {:<16} │ {:^16} │ {:^12} │\n", 
-                   "Algorithm", "Throughput", "Digest");
-        fmt::print("├{:─<18}┼{:─<18}┼{:─<14}┤\n", "", "", "");
+        print_benchmark_section("HASH FUNCTIONS", "🔢");
     }
+    
+    tabulate::Table table = create_benchmark_table({"Algorithm", "Throughput", "Digest"});
     
     json_results["hash"] = nlohmann::json::array();
     
@@ -599,10 +577,7 @@ void BenchmarkCommand::benchmark_hash(nlohmann::json& json_results) {
             double avg_time = std::accumulate(times.begin(), times.end(), 0.0) / times.size();
             double mbps = (data_size_ / 1024.0 / 1024.0) / (avg_time / 1000.0);
             
-            if (!json_output_) {
-                fmt::print("│ {:<16} │ {:>12.2f} MB/s │ {:>8} bits │\n",
-                           name, mbps, digest_size * 8);
-            }
+            table.add_row({name, format_mbps(mbps), fmt::format("{} bits", digest_size * 8)});
             
             json_results["hash"].push_back({
                 {"algorithm", name},
@@ -615,7 +590,7 @@ void BenchmarkCommand::benchmark_hash(nlohmann::json& json_results) {
     }
     
     if (!json_output_) {
-        fmt::print("└{:─<18}┴{:─<18}┴{:─<14}┘\n\n", "", "", "");
+        std::cout << table << std::endl;
     }
 }
 

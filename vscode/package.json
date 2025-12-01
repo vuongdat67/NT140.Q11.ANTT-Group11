@@ -1,0 +1,187 @@
+{
+  "name": "filevault",
+  "displayName": "FileVault - File Encryption",
+  "description": "Encrypt and decrypt files with modern cryptographic algorithms including Post-Quantum Cryptography",
+  "version": "1.0.0",
+  "publisher": "nt140-group15",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vuongdat67/NT140.Q11.ANTT-Group15"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "encryption",
+    "decryption",
+    "cryptography",
+    "aes",
+    "post-quantum",
+    "kyber",
+    "security",
+    "file protection"
+  ],
+  "activationEvents": [
+    "onCommand:filevault.encrypt",
+    "onCommand:filevault.decrypt",
+    "onCommand:filevault.info",
+    "onCommand:filevault.keygen",
+    "onCommand:filevault.benchmark",
+    "onCommand:filevault.hash"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "filevault.encrypt",
+        "title": "FileVault: Encrypt File",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "filevault.decrypt",
+        "title": "FileVault: Decrypt File",
+        "icon": "$(unlock)"
+      },
+      {
+        "command": "filevault.info",
+        "title": "FileVault: Show File Info",
+        "icon": "$(info)"
+      },
+      {
+        "command": "filevault.keygen",
+        "title": "FileVault: Generate Key Pair",
+        "icon": "$(key)"
+      },
+      {
+        "command": "filevault.hash",
+        "title": "FileVault: Calculate Hash",
+        "icon": "$(symbol-key)"
+      },
+      {
+        "command": "filevault.benchmark",
+        "title": "FileVault: Run Benchmark",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "filevault.setExecutablePath",
+        "title": "FileVault: Set Executable Path",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "filevault.encrypt",
+          "when": "!explorerResourceIsFolder && resourceExtname != '.fvlt'",
+          "group": "filevault@1"
+        },
+        {
+          "command": "filevault.decrypt",
+          "when": "!explorerResourceIsFolder && resourceExtname == '.fvlt'",
+          "group": "filevault@2"
+        },
+        {
+          "command": "filevault.info",
+          "when": "!explorerResourceIsFolder && resourceExtname == '.fvlt'",
+          "group": "filevault@3"
+        },
+        {
+          "command": "filevault.hash",
+          "when": "!explorerResourceIsFolder",
+          "group": "filevault@4"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "filevault.encrypt",
+          "when": "resourceExtname != '.fvlt'",
+          "group": "filevault@1"
+        },
+        {
+          "command": "filevault.hash",
+          "group": "filevault@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "FileVault",
+      "properties": {
+        "filevault.executablePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the FileVault executable. Leave empty to use from PATH."
+        },
+        "filevault.defaultAlgorithm": {
+          "type": "string",
+          "default": "aes-256-gcm",
+          "enum": [
+            "aes-128-gcm",
+            "aes-192-gcm",
+            "aes-256-gcm",
+            "chacha20-poly1305",
+            "serpent-256-gcm",
+            "kyber-1024-hybrid"
+          ],
+          "description": "Default encryption algorithm"
+        },
+        "filevault.defaultSecurityLevel": {
+          "type": "string",
+          "default": "medium",
+          "enum": [
+            "weak",
+            "medium",
+            "strong",
+            "paranoid"
+          ],
+          "description": "Default security level for key derivation"
+        },
+        "filevault.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications on encryption/decryption success"
+        },
+        "filevault.deleteOriginalAfterEncrypt": {
+          "type": "boolean",
+          "default": false,
+          "description": "Delete original file after successful encryption"
+        }
+      }
+    },
+    "languages": [
+      {
+        "id": "filevault",
+        "extensions": [
+          ".fvlt"
+        ],
+        "aliases": [
+          "FileVault Encrypted",
+          "Encrypted"
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

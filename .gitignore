@@ -70,4 +70,14 @@ test_output/
 
 # Test binaries directory
 bintest/
+bin/
 errors.txt
+
+*.key
+*.pub
+*.pem
+*.cert
+*.csr
+*.enc 
+*.dec
+*.zlib
