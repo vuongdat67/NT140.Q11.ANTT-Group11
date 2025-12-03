@@ -17,6 +17,9 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('filevault.hash', calculateHash),
         vscode.commands.registerCommand('filevault.benchmark', runBenchmark),
         vscode.commands.registerCommand('filevault.list', listAlgorithms),
+        vscode.commands.registerCommand('filevault.compress', compressFile),
+        vscode.commands.registerCommand('filevault.archive', createArchive),
+        vscode.commands.registerCommand('filevault.stego', steganography),
         vscode.commands.registerCommand('filevault.setExecutablePath', setExecutablePath)
     );
 
@@ -129,6 +132,12 @@ async function autoDetectExecutable(): Promise<void> {
     outputChannel.appendLine('FileVault executable not found in common locations');
 }
 
+// Strip ANSI escape codes from output
+function stripAnsiCodes(text: string): string {
+    // Remove ANSI color codes and other escape sequences
+    return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+}
+
 // Run FileVault command
 function runFileVault(args: string[]): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
@@ -143,20 +152,27 @@ function runFileVault(args: string[]): Promise<{ stdout: string; stderr: string 
         let stderr = '';
         
         process.stdout.on('data', (data) => {
-            stdout += data.toString();
-            outputChannel.append(data.toString());
+            const text = data.toString();
+            stdout += text;
+            // Strip ANSI codes before displaying in output channel
+            outputChannel.append(stripAnsiCodes(text));
         });
         
         process.stderr.on('data', (data) => {
-            stderr += data.toString();
-            outputChannel.append(data.toString());
+            const text = data.toString();
+            stderr += text;
+            // Strip ANSI codes before displaying in output channel
+            outputChannel.append(stripAnsiCodes(text));
         });
         
         process.on('close', (code) => {
             if (code === 0) {
-                resolve({ stdout, stderr });
+                resolve({ 
+                    stdout: stripAnsiCodes(stdout), 
+                    stderr: stripAnsiCodes(stderr) 
+                });
             } else {
-                reject(new Error(stderr || `Process exited with code ${code}`));
+                reject(new Error(stripAnsiCodes(stderr) || `Process exited with code ${code}`));
             }
         });
         
@@ -623,6 +639,235 @@ async function listAlgorithms() {
         
     } catch (error: any) {
         vscode.window.showErrorMessage(`Failed to list algorithms: ${error.message}`);
+    }
+}
+
+// Compress file
+async function compressFile(uri?: vscode.Uri) {
+    try {
+        let filePath: string;
+        if (uri) {
+            filePath = uri.fsPath;
+        } else {
+            const fileUri = await vscode.window.showOpenDialog({
+                canSelectMany: false,
+                title: 'Select file to compress'
+            });
+            if (!fileUri || fileUri.length === 0) {
+                return;
+            }
+            filePath = fileUri[0].fsPath;
+        }
+        
+        const algorithms = [
+            { label: 'LZMA', description: 'Best compression ratio, slower', value: 'lzma' },
+            { label: 'BZIP2', description: 'Balanced', value: 'bzip2' },
+            { label: 'ZLIB', description: 'Fast compression', value: 'zlib' }
+        ];
+        
+        const algorithm = await vscode.window.showQuickPick(algorithms, {
+            placeHolder: 'Select compression algorithm',
+            title: 'Compression Algorithm'
+        });
+        
+        if (!algorithm) {
+            return;
+        }
+        
+        const outputPath = filePath + '.compressed';
+        
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Compressing file...',
+            cancellable: false
+        }, async () => {
+            await runFileVault([
+                'compress',
+                filePath,
+                '-a', algorithm.value,
+                '-o', outputPath
+            ]);
+        });
+        
+        vscode.window.showInformationMessage(
+            `File compressed: ${path.basename(outputPath)}`,
+            'Open Folder'
+        ).then((result: any) => {
+            if (result === 'Open Folder') {
+                vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputPath));
+            }
+        });
+        
+    } catch (error: any) {
+        vscode.window.showErrorMessage(`Compression failed: ${error.message}`);
+    }
+}
+
+// Create archive
+async function createArchive() {
+    try {
+        const files = await vscode.window.showOpenDialog({
+            canSelectMany: true,
+            title: 'Select files to archive'
+        });
+        
+        if (!files || files.length === 0) {
+            return;
+        }
+        
+        const outputPath = await vscode.window.showSaveDialog({
+            title: 'Save archive as',
+            filters: {
+                'FileVault Archive': ['fvlt']
+            }
+        });
+        
+        if (!outputPath) {
+            return;
+        }
+        
+        const password = await vscode.window.showInputBox({
+            prompt: 'Enter archive password (optional)',
+            password: true,
+            placeHolder: 'Leave empty for no encryption'
+        });
+        
+        const args = ['archive', 'create', outputPath.fsPath];
+        files.forEach(f => args.push(f.fsPath));
+        
+        if (password && password.length > 0) {
+            args.push('-p', password);
+        }
+        
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Creating archive...',
+            cancellable: false
+        }, async () => {
+            await runFileVault(args);
+        });
+        
+        vscode.window.showInformationMessage(
+            `Archive created: ${path.basename(outputPath.fsPath)}`,
+            'Open Folder'
+        ).then((result: any) => {
+            if (result === 'Open Folder') {
+                vscode.commands.executeCommand('revealFileInOS', outputPath);
+            }
+        });
+        
+    } catch (error: any) {
+        vscode.window.showErrorMessage(`Archive creation failed: ${error.message}`);
+    }
+}
+
+// Steganography
+async function steganography(uri?: vscode.Uri) {
+    try {
+        const action = await vscode.window.showQuickPick([
+            { label: 'Hide', description: 'Hide data in image', value: 'hide' },
+            { label: 'Extract', description: 'Extract hidden data', value: 'extract' }
+        ], {
+            placeHolder: 'Select action',
+            title: 'Steganography'
+        });
+        
+        if (!action) {
+            return;
+        }
+        
+        if (action.value === 'hide') {
+            // Hide data in image
+            const coverImage = await vscode.window.showOpenDialog({
+                canSelectMany: false,
+                title: 'Select cover image',
+                filters: {
+                    'Images': ['png', 'bmp']
+                }
+            });
+            
+            if (!coverImage || coverImage.length === 0) {
+                return;
+            }
+            
+            const dataFile = await vscode.window.showOpenDialog({
+                canSelectMany: false,
+                title: 'Select file to hide'
+            });
+            
+            if (!dataFile || dataFile.length === 0) {
+                return;
+            }
+            
+            const outputPath = coverImage[0].fsPath.replace(/\.(png|bmp)$/i, '_stego.$1');
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Hiding data...',
+                cancellable: false
+            }, async () => {
+                await runFileVault([
+                    'stego',
+                    'hide',
+                    coverImage[0].fsPath,
+                    dataFile[0].fsPath,
+                    '-o', outputPath
+                ]);
+            });
+            
+            vscode.window.showInformationMessage(
+                `Data hidden in: ${path.basename(outputPath)}`,
+                'Open Folder'
+            ).then((result: any) => {
+                if (result === 'Open Folder') {
+                    vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputPath));
+                }
+            });
+            
+        } else {
+            // Extract hidden data
+            const stegoImage = await vscode.window.showOpenDialog({
+                canSelectMany: false,
+                title: 'Select stego image',
+                filters: {
+                    'Images': ['png', 'bmp']
+                }
+            });
+            
+            if (!stegoImage || stegoImage.length === 0) {
+                return;
+            }
+            
+            const outputPath = stegoImage[0].fsPath + '_extracted.dat';
+            
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Extracting data...',
+                cancellable: false
+            }, async () => {
+                await runFileVault([
+                    'stego',
+                    'extract',
+                    stegoImage[0].fsPath,
+                    '-o', outputPath
+                ]);
+            });
+            
+            vscode.window.showInformationMessage(
+                `Data extracted to: ${path.basename(outputPath)}`,
+                'Open File',
+                'Open Folder'
+            ).then((result: any) => {
+                if (result === 'Open File') {
+                    vscode.window.showTextDocument(vscode.Uri.file(outputPath));
+                } else if (result === 'Open Folder') {
+                    vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(outputPath));
+                }
+            });
+        }
+        
+    } catch (error: any) {
+        vscode.window.showErrorMessage(`Steganography operation failed: ${error.message}`);
     }
 }
 

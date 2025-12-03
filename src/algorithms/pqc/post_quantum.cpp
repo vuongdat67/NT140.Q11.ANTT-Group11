@@ -142,8 +142,8 @@ PQKeyPair Kyber::generate_keypair() {
         result.private_key.assign(priv_bits.begin(), priv_bits.end());
         result.public_key.assign(pub_bits.begin(), pub_bits.end());
         
-        spdlog::info("Generated {} key pair: public={} bytes, private={} bytes",
-                     name(), result.public_key.size(), result.private_key.size());
+        spdlog::debug("Generated {} key pair: public={} bytes, private={} bytes",
+                      name(), result.public_key.size(), result.private_key.size());
         
     } catch (const std::exception& e) {
         spdlog::error("Kyber key generation failed: {}", e.what());
@@ -318,8 +318,8 @@ PQKeyPair Dilithium::generate_keypair() {
         result.private_key.assign(priv_bits.begin(), priv_bits.end());
         result.public_key.assign(pub_bits.begin(), pub_bits.end());
         
-        spdlog::info("Generated {} key pair: public={} bytes, private={} bytes",
-                     name(), result.public_key.size(), result.private_key.size());
+        spdlog::debug("Generated {} key pair: public={} bytes, private={} bytes",
+                      name(), result.public_key.size(), result.private_key.size());
         
     } catch (const std::exception& e) {
         spdlog::error("Dilithium key generation failed: {}", e.what());

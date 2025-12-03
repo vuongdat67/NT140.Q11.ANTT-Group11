@@ -62,7 +62,7 @@ RSAKeyPair RSA::generate_key_pair() {
         auto public_pem = Botan::X509::PEM_encode(private_key);
         key_pair.public_key.assign(public_pem.begin(), public_pem.end());
         
-        spdlog::info("Generated RSA-{} key pair", key_bits_);
+        spdlog::debug("Generated RSA-{} key pair", key_bits_);
         
     } catch (const std::exception& e) {
         spdlog::error("Failed to generate RSA key pair: {}", e.what());

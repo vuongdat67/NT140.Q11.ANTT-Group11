@@ -94,7 +94,7 @@ core::CryptoResult AES_ECB::encrypt(
             return result;
         }
         
-        spdlog::warn("Using ECB mode - this is insecure for most applications!");
+        spdlog::debug("Using ECB mode - this is insecure for most applications!");
         
         // Create block cipher (not Cipher_Mode - ECB not exposed in Botan 3)
         auto cipher = Botan::BlockCipher::create(botan_name_);

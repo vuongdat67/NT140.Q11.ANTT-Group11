@@ -32,7 +32,10 @@
     "onCommand:filevault.info",
     "onCommand:filevault.keygen",
     "onCommand:filevault.benchmark",
-    "onCommand:filevault.hash"
+    "onCommand:filevault.hash",
+    "onCommand:filevault.compress",
+    "onCommand:filevault.archive",
+    "onCommand:filevault.stego"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -73,6 +76,21 @@
         "icon": "$(list-unordered)"
       },
       {
+        "command": "filevault.compress",
+        "title": "FileVault: Compress File",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "filevault.archive",
+        "title": "FileVault: Create Archive",
+        "icon": "$(file-zip)"
+      },
+      {
+        "command": "filevault.stego",
+        "title": "FileVault: Steganography",
+        "icon": "$(eye-closed)"
+      },
+      {
         "command": "filevault.setExecutablePath",
         "title": "FileVault: Set Executable Path",
         "icon": "$(gear)"
@@ -99,6 +117,16 @@
           "command": "filevault.hash",
           "when": "!explorerResourceIsFolder",
           "group": "filevault@4"
+        },
+        {
+          "command": "filevault.compress",
+          "when": "!explorerResourceIsFolder",
+          "group": "filevault@5"
+        },
+        {
+          "command": "filevault.stego",
+          "when": "!explorerResourceIsFolder && resourceExtname =~ /\\.(png|bmp)$/",
+          "group": "filevault@6"
         }
       ],
       "editor/context": [

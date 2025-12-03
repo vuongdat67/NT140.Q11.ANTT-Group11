@@ -15,7 +15,7 @@ namespace symmetric {
 
 TripleDES::TripleDES() {
     spdlog::debug("Created Triple-DES algorithm");
-    spdlog::warn("Triple-DES is a legacy algorithm. Consider using AES instead.");
+    spdlog::debug("Triple-DES is a legacy algorithm. Consider using AES instead.");
 }
 
 core::CryptoResult TripleDES::encrypt(
