@@ -115,6 +115,7 @@ int EncryptCommand::execute() {
             const int MAX_ATTEMPTS = 3;
             
             while (password_.empty() && attempts < MAX_ATTEMPTS) {
+                // read_secure already handles password strength check and confirmation
                 password_ = utils::Password::read_secure("Enter encryption password: ", true);
                 
                 if (password_.empty()) {
@@ -132,48 +133,28 @@ int EncryptCommand::execute() {
                 utils::Console::error("Password cannot be empty");
                 return 1;
             }
+            // Password strength already checked in read_secure, no need to check again
         } else {
             utils::Console::warning("Using password from command line is insecure!");
-        }
-        
-        // Check password strength (only once after we have a valid password)
-        auto strength_analysis = utils::Password::analyze_strength(password_);
-        if (strength_analysis.strength == core::PasswordStrength::VERY_WEAK || 
-            strength_analysis.strength == core::PasswordStrength::WEAK) {
-            fmt::print("\n");
-            utils::Console::warning(fmt::format("Password strength: {} (score: {}/100)", 
-                                   utils::Password::get_strength_label(strength_analysis.strength),
-                                   static_cast<int>(strength_analysis.score)));
             
-            if (!strength_analysis.warnings.empty()) {
-                fmt::print("  ⚠️  Warnings:\n");
-                for (const auto& warning : strength_analysis.warnings) {
-                    fmt::print("      • {}\n", warning);
+            // Only check strength for command-line passwords (not already checked)
+            auto strength_analysis = utils::Password::analyze_strength(password_);
+            if (strength_analysis.strength == core::PasswordStrength::VERY_WEAK || 
+                strength_analysis.strength == core::PasswordStrength::WEAK) {
+                fmt::print("\n");
+                utils::Console::warning(fmt::format("Password strength: {} (score: {}/100)", 
+                                       utils::Password::get_strength_label(strength_analysis.strength),
+                                       static_cast<int>(strength_analysis.score)));
+                
+                fmt::print("Continue with weak password? (y/N): ");
+                std::string response;
+                std::getline(std::cin, response);
+                
+                if (response != "y" && response != "Y") {
+                    utils::Console::info("Encryption cancelled");
+                    return 0;
                 }
             }
-            
-            if (!strength_analysis.suggestions.empty()) {
-                fmt::print("  💡 Suggestions:\n");
-                for (const auto& suggestion : strength_analysis.suggestions) {
-                    fmt::print("      • {}\n", suggestion);
-                }
-            }
-            
-            fmt::print("\n");
-            std::string response;
-            fmt::print("Continue with weak password? (y/N): ");
-            std::getline(std::cin, response);
-            
-            if (response != "y" && response != "Y") {
-                utils::Console::info("Encryption cancelled");
-                return 0;
-            }
-        } else if (verbose_ && (strength_analysis.strength == core::PasswordStrength::FAIR || 
-                               strength_analysis.strength == core::PasswordStrength::STRONG ||
-                               strength_analysis.strength == core::PasswordStrength::VERY_STRONG)) {
-            utils::Console::success(fmt::format("Password strength: {} (score: {}/100)", 
-                                   utils::Password::get_strength_label(strength_analysis.strength),
-                                   static_cast<int>(strength_analysis.score)));
         }
         
         // Set output file if not specified

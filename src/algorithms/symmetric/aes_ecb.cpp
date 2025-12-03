@@ -40,7 +40,8 @@ AES_ECB::AES_ECB(size_t key_bits) : key_bits_(key_bits) {
             break;
     }
     
-    spdlog::warn("Created AES-{}-ECB algorithm - ECB mode is insecure!", key_bits);
+    // Use debug level - ECB warning will only show when user enables verbose
+    spdlog::debug("Created AES-{}-ECB algorithm - ECB mode is insecure!", key_bits);
 }
 
 // PKCS7 padding

@@ -47,9 +47,8 @@ ProgressBar::ProgressBar(const std::string& prefix, size_t max_progress)
 }
 
 ProgressBar::~ProgressBar() {
-    if (bar_) {
-        bar_->mark_as_completed();
-    }
+    // Don't call mark_as_completed again if already completed
+    // The caller should call mark_as_completed() explicitly
 }
 
 void ProgressBar::set_progress(size_t progress) {
@@ -72,7 +71,7 @@ void ProgressBar::set_postfix(const std::string& text) {
 }
 
 void ProgressBar::mark_as_completed() {
-    if (bar_) {
+    if (bar_ && !bar_->is_completed()) {
         bar_->set_progress(100);  // Ensure it shows 100% before completing
         bar_->mark_as_completed();
     }

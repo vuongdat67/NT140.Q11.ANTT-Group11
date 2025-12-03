@@ -279,7 +279,22 @@ int HashCommand::verify_mode(const std::string& calculated_hash) {
     actual.erase(std::remove_if(actual.begin(), actual.end(), ::isspace), 
                  actual.end());
     
-    if (expected == actual) {
+    bool verified = (expected == actual);
+    
+    // Write to output file if specified (even in verify mode)
+    if (!output_file_.empty()) {
+        std::string output;
+        if (!no_filename_) {
+            output = fmt::format("{}  {}", calculated_hash, input_file_);
+        } else {
+            output = calculated_hash;
+        }
+        std::ofstream out(output_file_);
+        out << output << '\n';
+        utils::Console::success(fmt::format("Hash written to: {}", output_file_));
+    }
+    
+    if (verified) {
         utils::Console::success(
             fmt::format("{}: [PASS] Hash verification successful", input_file_)
         );

@@ -19,6 +19,9 @@ namespace cli {
 
 Application::Application() 
     : app_("FileVault", "Professional file encryption CLI tool") {
+    // Require subcommand or show help
+    app_.require_subcommand(0);
+    app_.set_help_all_flag("--help-all", "Show all help");
 }
 
 Application::~Application() = default;
@@ -44,16 +47,43 @@ void Application::initialize() {
 
 int Application::run(int argc, char** argv) {
     try {
+        // Pre-parse to check for verbose flag
+        bool early_verbose = false;
+        for (int i = 1; i < argc; ++i) {
+            std::string arg(argv[i]);
+            if (arg == "-v" || arg == "--verbose") {
+                early_verbose = true;
+                break;
+            }
+            if (arg.rfind("--log-level=", 0) == 0) {
+                std::string level = arg.substr(12);
+                if (level == "debug" || level == "info") {
+                    early_verbose = true;
+                }
+                break;
+            }
+        }
+        
+        // Apply verbose early so initialization logs are visible
+        if (early_verbose) {
+            spdlog::set_level(spdlog::level::info);
+        }
+        
         app_.parse(argc, argv);
         
-        // Apply logging settings
+        // Apply logging settings after parse
         if (verbose_) {
             spdlog::set_level(spdlog::level::debug);
-        } else {
+        } else if (!log_level_.empty()) {
             if (log_level_ == "debug") spdlog::set_level(spdlog::level::debug);
             else if (log_level_ == "info") spdlog::set_level(spdlog::level::info);
             else if (log_level_ == "warn") spdlog::set_level(spdlog::level::warn);
             else if (log_level_ == "error") spdlog::set_level(spdlog::level::err);
+        }
+        
+        // Show help if no subcommand was provided
+        if (app_.get_subcommands().empty()) {
+            std::cout << app_.help() << std::endl;
         }
         
         return 0;
@@ -92,7 +122,8 @@ void Application::setup_logging() {
     auto logger = std::make_shared<spdlog::logger>("filevault", console_sink);
     
     spdlog::set_default_logger(logger);
-    spdlog::set_level(spdlog::level::info);
+    // Default to error level - hide info/warnings unless --verbose is used
+    spdlog::set_level(spdlog::level::err);
     spdlog::set_pattern("[%^%l%$] %v");
 }
 

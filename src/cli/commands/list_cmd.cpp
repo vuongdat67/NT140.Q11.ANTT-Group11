@@ -171,13 +171,19 @@ int ListCommand::execute() {
     print_section_title("Hash Functions", "🔒");
     {
         auto table = create_styled_table({"Algorithm", "Output", "Security", "Speed", "Note"});
+        table.add_row({"MD5", "128-bit", "BROKEN", "****", "Legacy only!"});
+        table.add_row({"SHA-1", "160-bit", "BROKEN", "***", "Legacy only!"});
         table.add_row({"SHA-256", "256-bit", "Strong", "**", "Standard"});
         table.add_row({"SHA-512", "512-bit", "Maximum", "*", "Stronger"});
         table.add_row({"SHA3-256", "256-bit", "Strong", "**", "NIST SHA-3"});
         table.add_row({"SHA3-512", "512-bit", "Maximum", "*", "NIST SHA-3"});
         table.add_row({"BLAKE2b", "512-bit", "Maximum", "***", "Modern, fastest"});
         
-        table[5].format().font_color(tabulate::Color::green);
+        // Mark insecure hashes in red
+        table[1].format().font_color(tabulate::Color::red);
+        table[2].format().font_color(tabulate::Color::red);
+        // Mark recommended in green
+        table[7].format().font_color(tabulate::Color::green);
         
         std::cout << table << std::endl;
     }
