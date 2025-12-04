@@ -35,6 +35,16 @@ tabulate::Table create_styled_table(const std::vector<std::string>& headers) {
     return table;
 }
 
+// Print table with MinGW fallback
+void print_table_safe([[maybe_unused]] const tabulate::Table& table) {
+    #ifdef __MINGW32__
+    // For MinGW, just skip table printing (locale issues)
+    fmt::print("[Table output disabled on MinGW due to locale issues]\n");
+    #else
+    std::cout << table << std::endl;
+    #endif
+}
+
 void print_section_title(const std::string& title, const std::string& emoji = "") {
     fmt::print("\n");
     fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::cyan), 
@@ -64,7 +74,7 @@ int ListCommand::execute() {
         // Highlight recommended row
         table[3].format().font_color(tabulate::Color::green);
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Non-AEAD Modes ====================
@@ -83,7 +93,7 @@ int ListCommand::execute() {
         table.add_row({"AES-256-XTS", "512-bit", "16 bytes", "Disk", "Storage encryption"});
         table.add_row({"3DES", "168-bit", "8 bytes", "Block", "Legacy only!"});
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Insecure Modes ====================
@@ -98,7 +108,7 @@ int ListCommand::execute() {
             table[i].format().font_color(tabulate::Color::red);
         }
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Asymmetric ====================
@@ -112,7 +122,7 @@ int ListCommand::execute() {
         table.add_row({"ECC-P384", "384-bit", "Strong", "**", "192-bit security"});
         table.add_row({"ECC-P521", "521-bit", "Maximum", "**", "256-bit security"});
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Post-Quantum ====================
@@ -131,7 +141,7 @@ int ListCommand::execute() {
         table[3].format().font_color(tabulate::Color::green);
         table[4].format().font_color(tabulate::Color::green);
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Classical Ciphers ====================
@@ -149,7 +159,7 @@ int ListCommand::execute() {
             table[i].format().font_color(tabulate::Color::yellow);
         }
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== KDF ====================
@@ -164,7 +174,7 @@ int ListCommand::execute() {
         
         table[1].format().font_color(tabulate::Color::green);
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Hash Functions ====================
@@ -185,7 +195,7 @@ int ListCommand::execute() {
         // Mark recommended in green
         table[7].format().font_color(tabulate::Color::green);
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Security Levels ====================
@@ -202,7 +212,7 @@ int ListCommand::execute() {
         table[3].format().font_color(tabulate::Color::cyan);
         table[4].format().font_color(tabulate::Color::magenta);
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     // ==================== Usage Examples ====================
@@ -221,7 +231,7 @@ int ListCommand::execute() {
         // Style command column
         table.column(1).format().font_color(tabulate::Color::white);
         
-        std::cout << table << std::endl;
+        print_table_safe(table);
     }
     
     fmt::print(fmt::emphasis::italic | fmt::fg(fmt::color::gray), 

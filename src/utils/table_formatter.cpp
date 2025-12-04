@@ -1,24 +1,23 @@
 #include "filevault/utils/table_formatter.hpp"
 #include <fmt/core.h>
 #include <iostream>
-#include <locale>
+#include <sstream>
+#include <algorithm>
 
 using namespace tabulate;
-
-// Fix locale issues on Windows
-static void init_locale() {
-    try {
-        std::locale::global(std::locale(""));
-    } catch (...) {
-        // Fallback to C locale if system locale fails
-        std::locale::global(std::locale("C"));
-    }
-}
 
 namespace filevault {
 namespace utils {
 
+// Store data separately for MinGW fallback
+static std::vector<std::vector<std::string>> mingw_data;
+
 TableFormatter::TableFormatter(const std::vector<std::string>& headers) {
+    #ifdef __MINGW32__
+    mingw_data.clear();
+    mingw_data.push_back(headers);
+    #endif
+    
     tabulate::Table::Row_t row;
     for (const auto& h : headers) {
         row.push_back(h);
@@ -33,6 +32,10 @@ TableFormatter::TableFormatter(const std::vector<std::string>& headers) {
 }
 
 void TableFormatter::add_row(const std::vector<std::string>& row) {
+    #ifdef __MINGW32__
+    mingw_data.push_back(row);
+    #endif
+    
     tabulate::Table::Row_t table_row;
     for (const auto& cell : row) {
         table_row.push_back(cell);
@@ -41,24 +44,37 @@ void TableFormatter::add_row(const std::vector<std::string>& row) {
 }
 
 void TableFormatter::print() {
-    try {
-        init_locale();
-        std::cout << table_ << std::endl;
-    } catch (const std::exception&) {
-        // Fallback: print as simple text
-        std::cout << to_string() << std::endl;
+    #ifdef __MINGW32__
+    // Simple fallback formatter for MinGW (tabulate has locale issues)
+    if (mingw_data.empty()) return;
+    
+    // Calculate column widths
+    std::vector<size_t> widths(mingw_data[0].size(), 0);
+    for (const auto& row : mingw_data) {
+        for (size_t j = 0; j < row.size(); ++j) {
+            widths[j] = std::max(widths[j], row[j].length());
+        }
     }
+    
+    // Print rows
+    for (const auto& row : mingw_data) {
+        for (size_t j = 0; j < row.size(); ++j) {
+            std::cout << row[j];
+            // Add padding
+            for (size_t p = row[j].length(); p < widths[j]; ++p) std::cout << " ";
+            if (j < row.size() - 1) std::cout << " | ";
+        }
+        std::cout << std::endl;
+    }
+    #else
+    std::cout << table_ << std::endl;
+    #endif
 }
 
 std::string TableFormatter::to_string() {
-    try {
-        init_locale();
-        std::stringstream ss;
-        ss << table_;
-        return ss.str();
-    } catch (const std::exception&) {
-        return "[Table formatting error]";
-    }
+    std::stringstream ss;
+    ss << table_;
+    return ss.str();
 }
 
 void TableFormatter::set_border_style(const std::string& style) {

@@ -271,7 +271,9 @@ CompressionResult LzmaCompressor::decompress(std::span<const uint8_t> input) {
         
         // Decompress, growing buffer if needed
         while (true) {
-            ret = lzma_code(&strm, LZMA_RUN);
+            // Use LZMA_FINISH for single-call decompression when all input is available
+            lzma_action action = (strm.avail_in > 0) ? LZMA_RUN : LZMA_FINISH;
+            ret = lzma_code(&strm, action);
             
             if (ret == LZMA_STREAM_END) {
                 break;

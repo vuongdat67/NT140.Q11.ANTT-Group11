@@ -45,13 +45,13 @@ void ArchiveCommand::setup(CLI::App& app) {
     extract_cmd->add_flag("-v,--verbose", verbose_, "Verbose output");
     extract_cmd->callback([this]() { extract_ = true; execute(); });
     
-    // List mode
+    // List mode - TODO: Implement proper listing without extraction
     auto* list_cmd = cmd->add_subcommand("list", "List archive contents");
     list_cmd->add_option("archive", input_files_, "Archive file")
         ->required()
         ->check(CLI::ExistingFile);
     list_cmd->add_option("-p,--password", password_, "Decryption password");
-    list_cmd->callback([this]() { extract_ = true; execute(); });  // Reuse extract logic
+    list_cmd->callback([this]() { extract_ = true; execute(); });  // Temporarily use extract
     
     cmd->require_subcommand(1);
 }
@@ -456,3 +456,147 @@ int ArchiveCommand::do_extract() {
 }
 
 } // namespace filevault::cli::commands
+
+// Commented out do_list() - to be implemented later
+/*
+int ArchiveCommand::do_list() {
+    utils::Console::separator();
+    fmt::print("\n{:^80}\n", "FileVault Archive Contents");
+    utils::Console::separator();
+    
+    if (input_files_.empty()) {
+        utils::Console::error("No archive file specified");
+        return 1;
+    }
+    
+    auto archive_file = input_files_[0];
+    
+    if (!fs::exists(archive_file)) {
+        utils::Console::error(fmt::format("Archive not found: {}", archive_file));
+        return 1;
+    }
+    
+    utils::Console::info(fmt::format("Archive: {}", archive_file));
+    utils::Console::separator();
+    
+    // Read archive file
+    auto file_result = utils::FileIO::read_binary_file(archive_file);
+    if (!file_result.has_value()) {
+        utils::Console::error(fmt::format("Failed to read archive: {}", file_result.error()));
+        return 1;
+    }
+    
+    auto encrypted_data = file_result.value;
+    utils::Console::info(fmt::format("Read {} bytes", encrypted_data.size()));
+    
+    // Get password
+    if (password_.empty()) {
+        password_ = utils::Password::read_secure("Enter archive password: ", false);
+        if (password_.empty()) {
+            utils::Console::error("Password required");
+            return 1;
+        }
+    }
+    
+    utils::Console::info("Decrypting...");
+    
+    // Read encrypted file format
+    auto [header, ciphertext, auth_tag] = core::FileFormatHandler::read_file(archive_file);
+    
+    // Parse algorithm and KDF from header
+    auto algo_type = core::FileFormatHandler::from_algorithm_id(header.algorithm);
+    auto kdf_type = core::FileFormatHandler::from_kdf_id(header.kdf);
+    
+    if (verbose_) {
+        utils::Console::info(fmt::format("Algorithm: {}", engine_.algorithm_name(algo_type)));
+        utils::Console::info(fmt::format("KDF: {}", engine_.kdf_name(kdf_type)));
+    }
+    
+    // Setup config
+    core::EncryptionConfig config;
+    config.algorithm = algo_type;
+    config.kdf = kdf_type;
+    config.nonce = header.nonce;
+    config.tag = auth_tag;
+    
+    // Parse KDF params
+    if (kdf_type == core::KDFType::ARGON2ID || kdf_type == core::KDFType::ARGON2I) {
+        auto params = core::Argon2Params::deserialize(header.kdf_params);
+        config.kdf_memory_kb = params.memory_kb;
+        config.kdf_iterations = params.iterations;
+        config.kdf_parallelism = params.parallelism;
+    } else if (kdf_type == core::KDFType::PBKDF2_SHA256 || kdf_type == core::KDFType::PBKDF2_SHA512) {
+        auto params = core::PBKDF2Params::deserialize(header.kdf_params);
+        config.kdf_iterations = params.iterations;
+    }
+    
+    // Derive key
+    auto key = engine_.derive_key(password_, header.salt, config);
+    
+    // Decrypt
+    auto* algorithm = engine_.get_algorithm(algo_type);
+    if (!algorithm) {
+        utils::Console::error("Algorithm not available");
+        return 1;
+    }
+    
+    auto decrypt_result = algorithm->decrypt(ciphertext, key, config);
+    if (!decrypt_result.success) {
+        utils::Console::error(decrypt_result.error_message);
+        return 1;
+    }
+    
+    auto decrypted_data = decrypt_result.data;
+    utils::Console::success(fmt::format("Decrypted ({} bytes)", decrypted_data.size()));
+    
+    // Decompress if needed
+    auto decompressed_data = decrypted_data;
+    auto compression_type = core::FileFormatHandler::from_compression_id(header.compression);
+    
+    if (compression_type != core::CompressionType::NONE) {
+        std::string compression_name = "zlib";
+        if (compression_type == core::CompressionType::ZLIB) compression_name = "zlib";
+        else if (compression_type == core::CompressionType::LZMA) compression_name = "lzma";
+        else if (compression_type == core::CompressionType::BZIP2) compression_name = "bzip2";
+        
+        utils::Console::info(fmt::format("Decompressing ({})...", compression_name));
+        
+        auto decompressor = compression::ICompressor::create(compression_name);
+        if (!decompressor) {
+            utils::Console::error("Decompression not available");
+            return 1;
+        }
+        
+        auto decompress_result = decompressor->decompress(decrypted_data);
+        if (!decompress_result.success) {
+            utils::Console::error(decompress_result.error_message);
+            return 1;
+        }
+        
+        decompressed_data = decompress_result.data;
+        utils::Console::success(fmt::format("Decompressed ({} bytes)", decompressed_data.size()));
+    }
+    
+    // Parse archive
+    auto entries = archive::ArchiveFormat::parse(decompressed_data);
+    if (entries.empty()) {
+        utils::Console::error("Failed to parse archive or archive is empty");
+        return 1;
+    }
+    
+    utils::Console::separator();
+    utils::Console::success(fmt::format("Archive contains {} file(s):\n", entries.size()));
+    
+    // Print file list with details
+    size_t total_size = 0;
+    for (const auto& entry : entries) {
+        total_size += entry.file_size;
+        fmt::print("  {:40} {:>12} bytes\n", entry.filename, entry.file_size);
+    }
+    
+    utils::Console::separator();
+    fmt::print("Total: {} file(s), {} bytes\n", entries.size(), total_size);
+    
+    return 0;
+}
+*/

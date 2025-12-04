@@ -7,6 +7,7 @@
 #include "filevault/utils/password.hpp"
 #include "filevault/utils/progress.hpp"
 #include "filevault/compression/compressor.hpp"
+#include <spdlog/spdlog.h>
 #include <iostream>
 
 namespace filevault {
@@ -83,6 +84,12 @@ int DecryptCommand::execute() {
         core::KDFType kdf_type;
         bool is_compressed = false;
         
+        // Variables to store KDF params from header
+        uint32_t kdf_memory_kb = 0;
+        uint32_t kdf_iterations = 0;
+        uint32_t kdf_parallelism = 0;
+        bool has_kdf_params = false;
+        
         if (is_enhanced) {
             // Enhanced format with full header
             try {
@@ -95,6 +102,24 @@ int DecryptCommand::execute() {
                 algo_type = core::FileFormatHandler::from_algorithm_id(header.algorithm);
                 kdf_type = core::FileFormatHandler::from_kdf_id(header.kdf);
                 is_compressed = header.compressed;
+                
+                // Parse KDF params from header
+                if (!header.kdf_params.empty()) {
+                    if (kdf_type == core::KDFType::ARGON2ID || kdf_type == core::KDFType::ARGON2I) {
+                        auto params = core::Argon2Params::deserialize(header.kdf_params);
+                        kdf_memory_kb = params.memory_kb;
+                        kdf_iterations = params.iterations;
+                        kdf_parallelism = params.parallelism;
+                        has_kdf_params = true;
+                        spdlog::info("Loaded Argon2 params from header: memory={}KB, iterations={}, parallelism={}",
+                                     kdf_memory_kb, kdf_iterations, kdf_parallelism);
+                    } else if (kdf_type == core::KDFType::PBKDF2_SHA256 || kdf_type == core::KDFType::PBKDF2_SHA512) {
+                        auto params = core::PBKDF2Params::deserialize(header.kdf_params);
+                        kdf_iterations = params.iterations;
+                        has_kdf_params = true;
+                        spdlog::info("Loaded PBKDF2 params from header: iterations={}", kdf_iterations);
+                    }
+                }
                 
                 utils::Console::info("Format: Enhanced (v1.0)");
             } catch (const std::exception& e) {
@@ -149,10 +174,19 @@ int DecryptCommand::execute() {
         core::EncryptionConfig config;
         config.algorithm = algo_type;
         config.kdf = kdf_type;
-        config.level = core::SecurityLevel::MEDIUM;
         config.nonce = std::make_optional(nonce_data);
         config.tag = std::make_optional(auth_tag_data);  // GCM requires tag in config
-        config.apply_security_level();
+        
+        // Use KDF params from header if available, otherwise use default medium level
+        if (has_kdf_params) {
+            config.kdf_memory_kb = kdf_memory_kb;
+            config.kdf_iterations = kdf_iterations;
+            config.kdf_parallelism = kdf_parallelism;
+        } else {
+            // Legacy files without KDF params: use medium as default
+            config.level = core::SecurityLevel::MEDIUM;
+            config.apply_security_level();
+        }
         
         // Step 1: Derive key from password and salt
         utils::Console::info("Deriving key...");

@@ -162,6 +162,9 @@ std::vector<uint8_t> CryptoEngine::derive_key(
                     throw std::runtime_error("Failed to create Argon2 instance");
                 }
                 
+                spdlog::info("Argon2 params: memory={}KB, iterations={}, parallelism={}", 
+                             config.kdf_memory_kb, config.kdf_iterations, config.kdf_parallelism);
+                
                 auto argon2 = pwdhash->from_params(
                     config.kdf_memory_kb,
                     config.kdf_iterations, 
