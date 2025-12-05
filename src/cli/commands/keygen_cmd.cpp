@@ -39,6 +39,23 @@ void KeygenCommand::setup(CLI::App& app) {
     cmd->add_flag("-f,--force", force_, "Overwrite existing key files");
     cmd->add_flag("-v,--verbose", verbose_, "Verbose output");
     
+    cmd->footer(
+        "\nExamples:\n"
+        "  Generate RSA-2048:     filevault keygen -a rsa-2048\n"
+        "  Generate ECC P-256:    filevault keygen -a ecc-p256\n"
+        "  Custom output name:    filevault keygen -a rsa-4096 -o mykey\n"
+        "  Post-Quantum Kyber:    filevault keygen -a kyber-768\n"
+        "  PQ Hybrid:             filevault keygen -a kyber-1024-hybrid\n"
+        "  Dilithium signature:   filevault keygen -a dilithium-3\n"
+        "\n"
+        "RSA: rsa-2048, rsa-3072, rsa-4096\n"
+        "ECC: ecc-p256, ecc-p384, ecc-p521, ecdsa-p256, ecdsa-p384, ecdsa-p521\n"
+        "Post-Quantum KEM: kyber-512, kyber-768, kyber-1024\n"
+        "PQ Hybrid: kyber-512-hybrid, kyber-768-hybrid, kyber-1024-hybrid\n"
+        "PQ Signatures: dilithium-2, dilithium-3, dilithium-5\n"
+        "Default output: filevault_key.pub (public), filevault_key.key (private)\n"
+    );
+    
     cmd->callback([this]() { execute(); });
 }
 

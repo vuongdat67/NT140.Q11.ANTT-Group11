@@ -50,6 +50,15 @@ void StegoCommand::setup(CLI::App& app) {
     capacity_cmd->add_option("-b,--bits", bits_per_channel_, "Bits per channel (1-4, default: 1)")
         ->check(CLI::Range(1, 4));
     capacity_cmd->callback([this]() { operation_ = "capacity"; execute(); });
+
+    capacity_cmd->footer(
+        "\nExamples:\n"
+        "  Embed data:          filevault stego embed secret.txt cover.png -o stego.png\n"
+        "  Extract data:       filevault stego extract stego.png -o extracted.txt\n"
+        "  Check capacity:     filevault stego capacity cover.png -b 2\n"
+        "\n"
+        "Supported image formats: PNG, BMP\n"
+    );
     
     cmd->require_subcommand(1);
 }

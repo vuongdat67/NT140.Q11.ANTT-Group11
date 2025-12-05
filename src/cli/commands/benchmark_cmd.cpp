@@ -76,6 +76,16 @@ void BenchmarkCommand::setup(CLI::App& app) {
     cmd->add_flag("--kdf", kdf_only_, "Only benchmark key derivation functions");
     cmd->add_flag("--compression", compression_only_, "Only benchmark compression algorithms");
     
+    cmd->footer(
+        "Examples:\n"
+        "  filevault benchmark --all                              # Benchmark all algorithms\n"
+        "  filevault benchmark -a aes-256-gcm -i 10               # Benchmark AES-256-GCM (10 iterations)\n"
+        "  filevault benchmark --symmetric -s 10485760            # Symmetric algorithms with 10MB data\n"
+        "  filevault benchmark --pqc -o results.json              # Post-quantum algorithms to JSON\n"
+        "  filevault benchmark --asymmetric --json                # Asymmetric algorithms JSON output\n"
+        "  filevault benchmark -a chacha20-poly1305 -i 100        # Detailed ChaCha20 benchmark\n"
+    );
+
     cmd->callback([this]() { execute(); });
 }
 

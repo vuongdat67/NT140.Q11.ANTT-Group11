@@ -28,6 +28,15 @@ void DecompressCommand::setup(CLI::App& app) {
     subcommand_->add_flag("--benchmark", benchmark_, 
                   "Show decompression timing");
     
+    subcommand_->footer(
+        "\nExamples:\n"
+        "  Decompress with auto-detect:  filevault decompress file.txt.lzma\n"
+        "  Specify algorithm:           filevault decompress file.txt.zlib -a zlib\n"
+        "  Specify output file:         filevault decompress file.bz2 -o output.txt\n"
+        "  With benchmark:              filevault decompress file.lzma --benchmark\n"
+        "\n"
+        "Algorithms: zlib, bzip2, lzma\n"
+    );
     subcommand_->callback([this]() { execute(); });
 }
 

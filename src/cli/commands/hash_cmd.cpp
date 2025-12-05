@@ -59,6 +59,22 @@ void HashCommand::setup(CLI::App& app) {
     cmd->add_flag("--benchmark", benchmark_, 
                  "Show performance metrics");
     
+    cmd->footer(
+        "\nExamples:\n"
+        "  Hash with SHA256:      filevault hash file.txt\n"
+        "  Multiple algorithms:   filevault hash file.txt -a sha512\n"
+        "  Base64 output:         filevault hash file.txt --format base64\n"
+        "  Binary output:         filevault hash file.txt --format binary\n"
+        "  Verify hash:           filevault hash file.txt -v <expected-hash>\n"
+        "  HMAC authentication:   filevault hash file.txt --hmac secretkey\n"
+        "  Save to file:          filevault hash file.txt -o checksum.txt\n"
+        "\n"
+        "Algorithms: md5, sha1, sha224, sha256, sha384, sha512, sha512-256,\n"
+        "  sha3-256, sha3-384, sha3-512, blake2b-256, blake2b-512, blake2s-256,\n"
+        "  ripemd-160, whirlpool, tiger, sm3, streebog-256, streebog-512\n"
+        "Output formats: hex, base64, binary\n"
+    );
+    
     cmd->callback([this]() { execute(); });
 }
 

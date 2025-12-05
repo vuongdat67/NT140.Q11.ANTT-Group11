@@ -51,8 +51,18 @@ void ArchiveCommand::setup(CLI::App& app) {
         ->required()
         ->check(CLI::ExistingFile);
     list_cmd->add_option("-p,--password", password_, "Decryption password");
-    list_cmd->callback([this]() { extract_ = true; execute(); });  // Temporarily use extract
     
+    list_cmd->callback([this]() { extract_ = true; execute(); });  // Temporarily use extract
+    cmd->footer(
+        "Examples:\n"
+        "  filevault archive create file1.txt file2.txt -o backup.fva     # Create archive\n"
+        "  filevault archive create *.txt -o docs.fva -c lzma -s strong   # LZMA + strong security\n"
+        "  filevault archive create data/ -o data.fva -a chacha20-poly1305  # ChaCha20 encryption\n"
+        "  filevault archive extract backup.fva -o extracted/            # Extract archive\n"
+        "  filevault archive extract docs.fva -p MyPass -v               # Extract with password\n"
+        "  filevault archive list backup.fva                             # List archive contents\n"
+    );
+
     cmd->require_subcommand(1);
 }
 

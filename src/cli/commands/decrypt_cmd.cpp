@@ -29,6 +29,17 @@ void DecryptCommand::setup(CLI::App& app) {
     cmd->add_flag("-v,--verbose", verbose_, "Verbose output");
     cmd->add_flag("--no-progress", no_progress_, "Disable progress bars");
     
+    cmd->footer(
+        "\nExamples:\n"
+        "  Decrypt file:          filevault decrypt document.txt.fvlt\n"
+        "  Specify output:        filevault decrypt secret.fvlt -o output.txt\n"
+        "  With password arg:     filevault decrypt file.fvlt -p mypassword\n"
+        "  Verbose mode:          filevault decrypt file.fvlt -v\n"
+        "\n"
+        "Supported formats: .fvlt (FileVault encrypted files)\n"
+        "Automatically detects: algorithm, mode, KDF settings from header\n"
+    );
+    
     cmd->callback([this]() { execute(); });
 }
 

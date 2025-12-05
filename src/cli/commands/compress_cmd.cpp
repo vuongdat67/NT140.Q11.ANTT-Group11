@@ -34,6 +34,20 @@ void CompressCommand::setup(CLI::App& app) {
     subcommand_->add_flag("--benchmark", benchmark_, 
                   "Show compression ratio and timing");
     
+    subcommand_->footer(
+        "\nExamples:\n"
+        "  Compress with LZMA:    filevault compress large_file.txt -a lzma\n"
+        "  Maximum compression:   filevault compress file.txt -a lzma -l 9\n"
+        "  Fast compression:      filevault compress file.txt -a zlib -l 1\n"
+        "  Decompress:            filevault compress file.txt.zlib -d\n"
+        "  Auto-detect format:    filevault compress file.lzma -d --auto-detect\n"
+        "  With benchmark:        filevault compress file.txt --benchmark\n"
+        "\n"
+        "Algorithms: zlib, bzip2, lzma\n"
+        "Levels: 1 (fastest) to 9 (best compression)\n"
+        "Default: lzma level 6\n"
+    );
+    
     subcommand_->callback([this]() { execute(); });
 }
 

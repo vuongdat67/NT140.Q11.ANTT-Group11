@@ -20,6 +20,15 @@ void InfoCommand::setup(CLI::App& app) {
         ->check(CLI::ExistingFile);
     
     cmd->add_flag("-v,--verbose", verbose_, "Show detailed information");
+
+    cmd->footer(
+        "\nExamples:\n"
+        "  Show file info:        filevault info secret.fvlt\n"
+        "  Verbose output:       filevault info secret.fvlt -v\n"
+        "\n"
+        "Displays information about the encrypted file, including format version,\n"
+        "encryption algorithm, KDF, compression, and sizes of various components.\n"
+    );
     
     cmd->callback([this]() { execute(); });
 }

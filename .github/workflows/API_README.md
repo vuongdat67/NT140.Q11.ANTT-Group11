@@ -5,7 +5,7 @@ Tài liệu hướng dẫn sử dụng và học tập về các thuật toán m
 ## 📚 API Documentation
 
 ### Doxygen (API Reference)
-- **Location**: [`doxygen/html/index.html`](doxygen/html/index.html)
+- **Location**: [`doxygen/html/index.html`](/html/index.html) or [`doxygen/latex/FileVault-API.pdf`](/pdf/FileVault-API.pdf)
 - **Features**: 
   - Class hierarchy diagrams
   - Full API reference với source code

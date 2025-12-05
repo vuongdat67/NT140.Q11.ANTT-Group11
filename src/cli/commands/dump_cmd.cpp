@@ -35,6 +35,16 @@ void DumpCommand::setup(CLI::App& app) {
     cmd->add_flag("--no-ascii", [this](int64_t) { show_ascii_ = false; },
                   "Hide ASCII column (hex format only)");
     
+    cmd->footer(
+        "\nExamples:\n"
+        "  Hex dump entire file:       filevault dump secret.bin\n"
+        "  Binary dump first 256 bytes: filevault dump data.dat -f binary -n 256\n"
+        "  Base64 dump file:           filevault dump image.png -f base64\n"
+        "  Hex dump without ASCII:     filevault dump document.pdf --no-ascii\n"
+        "\n"
+        "Formats: hex (default), binary, base64\n"
+    );
+    
     cmd->callback([this]() { this->execute(); });
 }
 
