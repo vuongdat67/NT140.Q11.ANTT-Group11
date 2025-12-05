@@ -108,6 +108,7 @@ set(CLI_SOURCES
     src/cli/commands/stego_cmd.cpp
     src/cli/commands/archive_cmd.cpp
     src/cli/commands/keygen_cmd.cpp
+    src/cli/commands/dump_cmd.cpp
 )
 
 set(ALGORITHM_SOURCES
