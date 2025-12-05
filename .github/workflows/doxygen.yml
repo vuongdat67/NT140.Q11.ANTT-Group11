@@ -44,8 +44,9 @@ jobs:
           echo "📄 Generating HTML documentation..."
           doxygen Doxyfile.html
           
-          if [ -d docs/doxygen-html/html ]; then
-            echo "✅ HTML docs generated: $(du -sh docs/doxygen-html/html | cut -f1)"
+          if [ -d docs/doxygen/html ]; then
+            echo "✅ HTML docs generated: $(du -sh docs/doxygen/html | cut -f1)"
+            echo "✅ HTML files: $(find docs/doxygen/html -name '*.html' | wc -l)"
           else
             echo "❌ HTML generation failed"
             exit 1
@@ -56,8 +57,10 @@ jobs:
           echo "📚 Generating LaTeX documentation..."
           doxygen Doxyfile.latex
           
-          if [ -d docs/doxygen-latex/latex ]; then
+          if [ -d docs/doxygen/latex ]; then
             echo "✅ LaTeX sources generated"
+            echo "✅ DOT graphs: $(find docs/doxygen/latex -name '*.dot' | wc -l)"
+            echo "✅ TEX files: $(find docs/doxygen/latex -name '*.tex' | wc -l)"
           else
             echo "❌ LaTeX generation failed"
             exit 1
@@ -66,7 +69,7 @@ jobs:
       - name: Build PDF from LaTeX
         continue-on-error: true
         run: |
-          cd docs/doxygen-latex/latex
+          cd docs/doxygen/latex
           
           echo "🔨 Building PDF with pdflatex..."
           # Use make to build PDF (handles all dependencies)
@@ -74,7 +77,8 @@ jobs:
           
           if [ -f refman.pdf ]; then
             PDF_SIZE=$(du -h refman.pdf | cut -f1)
-            echo "✅ PDF successfully generated: $PDF_SIZE"
+            PDF_PAGES=$(pdfinfo refman.pdf 2>/dev/null | grep Pages | awk '{print $2}' || echo "unknown")
+            echo "✅ PDF successfully generated: $PDF_SIZE ($PDF_PAGES pages)"
             
             # Rename to more friendly name
             cp refman.pdf FileVault-API.pdf
@@ -97,20 +101,20 @@ jobs:
           echo "✅ README template saved"
           
           # Copy HTML documentation
-          if [ -d docs/doxygen-html/html ]; then
-            cp -r docs/doxygen-html/html /tmp/api-docs/
-            echo "✅ HTML copied"
+          if [ -d docs/doxygen/html ]; then
+            cp -r docs/doxygen/html /tmp/api-docs/
+            echo "✅ HTML copied: $(find /tmp/api-docs/html -name '*.html' | wc -l) files"
           fi
           
           # Copy LaTeX sources
-          if [ -d docs/doxygen-latex/latex ]; then
-            cp -r docs/doxygen-latex/latex /tmp/api-docs/
+          if [ -d docs/doxygen/latex ]; then
+            cp -r docs/doxygen/latex /tmp/api-docs/
             echo "✅ LaTeX sources copied"
             
             # Copy PDF if successfully built
-            if [ -f docs/doxygen-latex/latex/FileVault-API.pdf ]; then
+            if [ -f docs/doxygen/latex/FileVault-API.pdf ]; then
               mkdir -p /tmp/api-docs/pdf
-              cp docs/doxygen-latex/latex/FileVault-API.pdf /tmp/api-docs/pdf/
+              cp docs/doxygen/latex/FileVault-API.pdf /tmp/api-docs/pdf/
               echo "✅ PDF copied ($(du -h /tmp/api-docs/pdf/FileVault-API.pdf | cut -f1))"
             else
               echo "⚠️ No PDF found (build may have failed)"
