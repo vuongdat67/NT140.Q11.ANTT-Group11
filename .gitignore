@@ -81,3 +81,6 @@ errors.txt
 *.enc 
 *.dec
 *.zlib
+
+# Doxygen generated documentation (will be in API branch only)
+docs/doxygen/

@@ -32,102 +32,99 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz texlive-latex-base texlive-latex-extra texlive-fonts-recommended
       
+      - name: Enable LaTeX generation in Doxyfile
+        run: |
+          # Temporarily enable LaTeX generation for workflow
+          sed -i 's/GENERATE_LATEX         = NO/GENERATE_LATEX         = YES/' Doxyfile
+          echo "✓ LaTeX generation enabled"
+      
       - name: Generate Doxygen documentation
         run: |
           doxygen Doxyfile
       
       - name: Strip emojis from LaTeX files
         run: |
-          # Remove emoji patterns from all .tex files
-          find doxygen/latex -name "*.tex" -type f -exec sed -i 's/[😀-🙏🌀-🗿🚀-🛿✀-➿]/[emoji]/g' {} +
-          
-          # Also remove specific unicode emoji ranges
-          find doxygen/latex -name "*.tex" -type f -exec sed -i 's/[\xF0\x9F][\x80-\xBF][\x80-\xBF][\x80-\xBF]//g' {} +
-          
-          # Remove zero-width characters and other problematic unicode
-          find doxygen/latex -name "*.tex" -type f -exec sed -i 's/[\u200B-\u200D\uFEFF]//g' {} +
-          
-          echo "✓ Emojis stripped from LaTeX files"
-      
-      - name: Build LaTeX PDF (optional, may fail)
-        continue-on-error: true
-        shell: bash
-        run: |
-          cd doxygen/latex
-          make pdf || echo "LaTeX PDF build failed (non-critical)"
-      
-      - name: Create archive
-        run: |
-          # Create HTML archive
-          tar -czf doxygen-html.tar.gz -C doxygen/html .
-          
-          # Create LaTeX archive (if exists)
-          if [ -d doxygen/latex ]; then
-            tar -czf doxygen-latex.tar.gz -C doxygen/latex .
+          if [ -d docs/doxygen/latex ]; then
+            # Remove emoji patterns from all .tex files
+            find docs/doxygen/latex -name "*.tex" -type f -exec sed -i 's/[😀-🙏🌀-🗿🚀-🛿✀-➿]/[emoji]/g' {} + || true
+            
+            # Also remove specific unicode emoji ranges
+            find docs/doxygen/latex -name "*.tex" -type f -exec sed -i 's/[\xF0\x9F][\x80-\xBF][\x80-\xBF][\x80-\xBF]//g' {} + || true
+            
+            # Remove zero-width characters and other problematic unicode
+            find docs/doxygen/latex -name "*.tex" -type f -exec sed -i 's/[\u200B-\u200D\uFEFF]//g' {} + || true
+            
+            echo "✓ Emojis stripped from LaTeX files"
           fi
-          
-          echo "✓ Archives created"
+      
+      - name: Build LaTeX PDF
+        continue-on-error: true
+        run: |
+          if [ -d docs/doxygen/latex ]; then
+            cd docs/doxygen/latex
+            make pdf 2>&1 | tee build.log || echo "⚠ LaTeX PDF build had errors (non-critical)"
+            
+            if [ -f refman.pdf ]; then
+              echo "✅ PDF successfully generated: refman.pdf"
+            else
+              echo "❌ PDF generation failed, see build.log"
+            fi
+          fi
       
       - name: Checkout API branch
         run: |
-          # Create API branch if it doesn't exist
-          git fetch origin API || git branch API
+          # Save current commit SHA
+          MASTER_SHA=$(git rev-parse --short HEAD)
+          echo "MASTER_SHA=$MASTER_SHA" >> $GITHUB_ENV
+          
+          # Fetch and checkout API branch
+          git fetch origin API || true
           git checkout API || git checkout -b API
           
-          # Clear existing doxygen directory
+          # Clear existing docs
           rm -rf doxygen
           git rm -rf doxygen 2>/dev/null || true
+          
+          echo "✓ Checked out API branch"
       
       - name: Copy documentation to API branch
         run: |
-          # Copy generated documentation
-          cp -r doxygen ./
+          # Copy generated HTML documentation
+          mkdir -p doxygen
+          cp -r docs/doxygen/html doxygen/
           
-          # Remove LaTeX source files (keep only HTML and archives)
-          if [ -d doxygen/latex ]; then
+          # Copy LaTeX documentation if exists
+          if [ -d docs/doxygen/latex ]; then
+            cp -r docs/doxygen/latex doxygen/
+            
             # Keep only the PDF if it was built successfully
             if [ -f doxygen/latex/refman.pdf ]; then
               mkdir -p doxygen/pdf
               cp doxygen/latex/refman.pdf doxygen/pdf/FileVault-API.pdf
+              echo "✅ PDF copied to doxygen/pdf/FileVault-API.pdf"
             fi
-            # Remove LaTeX source directory
-            rm -rf doxygen/latex
           fi
           
+          echo "✓ Documentation copied to API branch"
+          
           # Create README for API branch
-          cat > doxygen/README.md << 'EOFMARKER'
-          # FileVault API Documentation
+          echo "# FileVault API Documentation" > doxygen/README.md
+          echo "" >> doxygen/README.md
+          echo "Auto-generated API documentation using Doxygen." >> doxygen/README.md
+          echo "" >> doxygen/README.md
+          echo "## Contents" >> doxygen/README.md
+          echo "" >> doxygen/README.md
+          echo "- **html/** - HTML documentation" >> doxygen/README.md
+          echo "- **latex/** - LaTeX source files" >> doxygen/README.md
+          echo "- **pdf/** - PDF documentation (if built)" >> doxygen/README.md
+          echo "" >> doxygen/README.md
+          echo "## View Online" >> doxygen/README.md
+          echo "" >> doxygen/README.md
+          echo "Open html/index.html in your browser." >> doxygen/README.md
+          echo "" >> doxygen/README.md
+          echo "Generated from commit: $MASTER_SHA" >> doxygen/README.md
           
-          Auto-generated API documentation using Doxygen.
-          
-          ## Contents
-          
-          - **html/** - HTML documentation (main)
-          - **pdf/** - PDF documentation (if available)
-          
-          ## View Online
-          
-          Open html/index.html in your browser to view the API documentation.
-          
-          ## Generation Info
-          
-          - Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          - Commit: $(git rev-parse --short HEAD)
-          - Branch: master
-          - Tool: Doxygen $(doxygen --version)
-          
-          ## Features
-          
-          - Full API reference with class diagrams
-          - Call graphs and dependency graphs
-          - Source code browser
-          - Search functionality
-          - Hyperlinked cross-references
-          
-          This documentation is automatically generated. Do not edit manually.
-          EOFMARKER
-          
-          echo "✓ Documentation prepared for API branch"
+          echo "✓ README created for API branch"
       
       - name: Commit and push to API branch
         run: |
