@@ -92,6 +92,10 @@ jobs:
           # Create temporary directory for docs
           mkdir -p /tmp/api-docs
           
+          # Copy README template BEFORE checkout (file will be deleted)
+          cp .github/workflows/API_README.md /tmp/api-docs/README_TEMPLATE.md
+          echo "✅ README template saved"
+          
           # Copy HTML documentation
           if [ -d docs/doxygen-html/html ]; then
             cp -r docs/doxygen-html/html /tmp/api-docs/
@@ -137,8 +141,8 @@ jobs:
           
           echo "✓ Docs copied to clean API branch"
           
-          # Copy README template and customize
-          cp .github/workflows/API_README.md doxygen/README.md
+          # Copy README template from temp and customize
+          cp /tmp/api-docs/README_TEMPLATE.md doxygen/README.md
           
           # Replace placeholders with actual stats
           sed -i "s/\*Auto-updated by workflow\*/$(date -u +"%Y-%m-%d %H:%M:%S UTC")/" doxygen/README.md
