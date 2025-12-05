@@ -15,7 +15,7 @@ void CompressCommand::setup(CLI::App& app) {
         ->required()
         ->check(CLI::ExistingFile);
     
-    subcommand_->add_option("output,-o,--output", output_file_, "Output file");
+    subcommand_->add_option("-o,--output", output_file_, "Output file");
     
     subcommand_->add_option("-a,--algorithm", algorithm_, "Compression algorithm")
         ->check(CLI::IsMember({"zlib", "bzip2", "lzma"}));
@@ -121,6 +121,17 @@ int CompressCommand::do_compress() {
     utils::Console::info(fmt::format("Original:    {} bytes", original_size));
     utils::Console::info(fmt::format("Compressed:  {} bytes ({:.1f}%)", 
                                      compressed_size, ratio));
+    
+    // Warning for negative compression (file became larger)
+    if (ratio > 100.0) {
+        utils::Console::warning(fmt::format(
+            "File became LARGER after compression ({:.1f}% of original size)", ratio));
+        utils::Console::info("This usually happens with:");
+        utils::Console::info("  • Already compressed files (zip, jpg, mp4, gz, etc.)");
+        utils::Console::info("  • Encrypted files");
+        utils::Console::info("  • Very small files (compression overhead > data)");
+        utils::Console::info("💡 Consider using the original file instead");
+    }
     
     if (benchmark_) {
         utils::Console::info(fmt::format("Time:        {:.2f} ms", duration.count()));

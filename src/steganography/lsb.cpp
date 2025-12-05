@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstring>
 #include <algorithm>
+#include <spdlog/spdlog.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -63,11 +64,35 @@ bool LSBSteganography::embed(
     
     if (ext == "png") {
         success = stbi_write_png(output_path.c_str(), width, height, channels, image_data, width * channels);
+        if (!success) {
+            spdlog::error("PNG write failed for: {}", output_path);
+            spdlog::error("Image dimensions: {}x{}x{} channels", width, height, channels);
+            spdlog::error("Stride: {} bytes", width * channels);
+            const char* reason = stbi_failure_reason();
+            if (reason) {
+                spdlog::error("STB reason: {}", reason);
+            }
+        }
     } else if (ext == "bmp") {
         success = stbi_write_bmp(output_path.c_str(), width, height, channels, image_data);
+        if (!success) {
+            spdlog::error("BMP write failed for: {}", output_path);
+            const char* reason = stbi_failure_reason();
+            if (reason) {
+                spdlog::error("STB reason: {}", reason);
+            }
+        }
     } else {
         // Default to PNG
+        spdlog::warn("Unknown extension '{}', defaulting to PNG format", ext);
         success = stbi_write_png(output_path.c_str(), width, height, channels, image_data, width * channels);
+        if (!success) {
+            spdlog::error("PNG write (default) failed for: {}", output_path);
+            const char* reason = stbi_failure_reason();
+            if (reason) {
+                spdlog::error("STB reason: {}", reason);
+            }
+        }
     }
     
     stbi_image_free(image_data);

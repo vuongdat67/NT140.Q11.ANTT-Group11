@@ -77,17 +77,28 @@ int StegoCommand::do_embed() {
         }
         auto secret_data = result.value;
         
+        // Extract filename with extension for metadata
+        std::string filename = fs::path(input_file_).filename().string();
+        
+        // Prepend filename metadata: [filename_length(2 bytes)][filename][data]
+        std::vector<uint8_t> data_with_metadata;
+        uint16_t filename_len = static_cast<uint16_t>(filename.size());
+        data_with_metadata.push_back(filename_len & 0xFF);
+        data_with_metadata.push_back((filename_len >> 8) & 0xFF);
+        data_with_metadata.insert(data_with_metadata.end(), filename.begin(), filename.end());
+        data_with_metadata.insert(data_with_metadata.end(), secret_data.begin(), secret_data.end());
+        
         if (verbose_) {
             utils::Console::info(std::format("Secret data size: {} bytes", secret_data.size()));
         }
         
-        // Check capacity
+        // Check capacity (with metadata overhead)
         size_t capacity = LSBSteganography::calculate_capacity(cover_image_, bits_per_channel_);
         
-        if (secret_data.size() > capacity) {
+        if (data_with_metadata.size() > capacity) {
             utils::Console::error(std::format(
-                "Secret data ({} bytes) exceeds image capacity ({} bytes)",
-                secret_data.size(), capacity
+                "Secret data ({} bytes) + metadata ({} bytes) exceeds image capacity ({} bytes)",
+                secret_data.size(), data_with_metadata.size() - secret_data.size(), capacity
             ));
             utils::Console::info(std::format(
                 "Try using --bits {} for more capacity",
@@ -97,18 +108,19 @@ int StegoCommand::do_embed() {
         }
         
         if (verbose_) {
+            utils::Console::info(std::format("Original filename: {}", filename));
             utils::Console::info(std::format("Image capacity: {} bytes", capacity));
             utils::Console::info(std::format("Utilization: {:.1f}%", 
-                (static_cast<double>(secret_data.size()) / capacity) * 100.0));
+                (static_cast<double>(data_with_metadata.size()) / capacity) * 100.0));
             utils::Console::info(std::format("Bits per channel: {}", bits_per_channel_));
         }
         
-        // Embed data
+        // Embed data with metadata
         utils::Console::info("Embedding data...");
         
         bool success = LSBSteganography::embed(
             cover_image_,
-            secret_data,
+            data_with_metadata,
             output_file_,
             bits_per_channel_
         );
@@ -164,8 +176,50 @@ int StegoCommand::do_extract() {
             return 1;
         }
         
+        // Parse metadata: [2 bytes len][filename][data]
+        std::string original_filename;
+        std::vector<uint8_t> actual_data;
+        
+        if (extracted_data.size() >= 2) {
+            uint16_t filename_len = extracted_data[0] | (extracted_data[1] << 8);
+            
+            // Check if metadata is present and valid
+            if (filename_len > 0 && filename_len < 256 && extracted_data.size() > 2 + filename_len) {
+                // Extract filename
+                original_filename.assign(
+                    extracted_data.begin() + 2,
+                    extracted_data.begin() + 2 + filename_len
+                );
+                
+                // Extract actual data
+                actual_data.assign(
+                    extracted_data.begin() + 2 + filename_len,
+                    extracted_data.end()
+                );
+                
+                if (verbose_) {
+                    utils::Console::info(std::format("Original filename: {}", original_filename));
+                }
+            } else {
+                // No metadata or invalid format, use all data
+                actual_data = extracted_data;
+            }
+        } else {
+            // Data too small for metadata
+            actual_data = extracted_data;
+        }
+        
+        // Determine output filename: use original if found, otherwise use specified output
+        std::string final_output = output_file_;
+        if (!original_filename.empty()) {
+            // Replace the filename part with the original filename, keep the directory
+            fs::path output_path(output_file_);
+            fs::path output_dir = output_path.parent_path();
+            final_output = (output_dir / original_filename).string();
+        }
+        
         // Write extracted data
-        auto write_result = utils::FileIO::write_file(output_file_, extracted_data);
+        auto write_result = utils::FileIO::write_file(final_output, actual_data);
         if (!write_result.success) {
             utils::Console::error(std::format("Failed to write output file: {}", write_result.error_message));
             return 1;
@@ -173,19 +227,19 @@ int StegoCommand::do_extract() {
         
         utils::Console::success(std::format(
             "Successfully extracted {} bytes",
-            extracted_data.size()
+            actual_data.size()
         ));
-        utils::Console::info(std::format("Output: {}", output_file_));
+        utils::Console::info(std::format("Output: {}", final_output));
         
         if (verbose_) {
             // Show first few bytes as hex
-            size_t preview_size = std::min<size_t>(16, extracted_data.size());
+            size_t preview_size = std::min<size_t>(16, actual_data.size());
             std::ostringstream hex_stream;
             for (size_t i = 0; i < preview_size; ++i) {
                 hex_stream << std::hex << std::setw(2) << std::setfill('0') 
-                          << static_cast<int>(extracted_data[i]) << " ";
+                          << static_cast<int>(actual_data[i]) << " ";
             }
-            if (extracted_data.size() > preview_size) {
+            if (actual_data.size() > preview_size) {
                 hex_stream << "...";
             }
             utils::Console::info(std::format("Data preview: {}", hex_stream.str()));

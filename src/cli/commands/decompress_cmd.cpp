@@ -15,7 +15,7 @@ void DecompressCommand::setup(CLI::App& app) {
         ->required()
         ->check(CLI::ExistingFile);
     
-    subcommand_->add_option("output,-o,--output", output_file_, "Output file");
+    subcommand_->add_option("-o,--output", output_file_, "Output file");
     
     subcommand_->add_option("-a,--algorithm", algorithm_, "Compression algorithm (auto-detected if not specified)")
         ->check(CLI::IsMember({"zlib", "bzip2", "lzma"}));

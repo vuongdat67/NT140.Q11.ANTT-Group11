@@ -146,30 +146,35 @@ function stripAnsiCodes(text: string): string {
 function runFileVault(args: string[]): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
         const executable = getExecutablePath();
-        outputChannel.appendLine(`> ${executable} ${args.join(' ')}`);
+        outputChannel.appendLine(`> "${executable}" ${args.map(a => a.includes(' ') ? `"${a}"` : a).join(' ')}`);
         
-        const process = child_process.spawn(executable, args, {
-            shell: true
+        // Use shell: false for proper argument passing
+        // spawn() with shell:false requires proper setup on Windows
+        const childProcess = child_process.spawn(executable, args, {
+            shell: false,
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'pipe'],  // Explicit stdio
+            env: process.env  // Inherit environment from Node.js process
         });
         
         let stdout = '';
         let stderr = '';
         
-        process.stdout.on('data', (data) => {
+        childProcess.stdout.on('data', (data: Buffer) => {
             const text = data.toString();
             stdout += text;
             // Strip ANSI codes before displaying in output channel
             outputChannel.append(stripAnsiCodes(text));
         });
         
-        process.stderr.on('data', (data) => {
+        childProcess.stderr.on('data', (data: Buffer) => {
             const text = data.toString();
             stderr += text;
             // Strip ANSI codes before displaying in output channel
             outputChannel.append(stripAnsiCodes(text));
         });
         
-        process.on('close', (code) => {
+        childProcess.on('close', (code: number | null) => {
             if (code === 0) {
                 resolve({ 
                     stdout: stripAnsiCodes(stdout), 
@@ -180,7 +185,7 @@ function runFileVault(args: string[]): Promise<{ stdout: string; stderr: string 
             }
         });
         
-        process.on('error', (error) => {
+        childProcess.on('error', (error: Error) => {
             reject(error);
         });
     });
@@ -697,7 +702,7 @@ async function compressFile(uri?: vscode.Uri) {
         
         const algorithms = [
             { label: 'LZMA', description: 'Best compression ratio, slower', value: 'lzma' },
-            { label: 'BZIP2', description: 'Balanced', value: 'bzip2' },
+            { label: 'BZIP2', description: '⚠️ Temporarily disabled - use ZLIB or LZMA', value: 'bzip2' },
             { label: 'ZLIB', description: 'Fast compression', value: 'zlib' }
         ];
         
@@ -751,10 +756,27 @@ async function createArchive() {
             return;
         }
         
+        // MUST ask password FIRST to avoid CLI hanging on stdin
+        const password = await vscode.window.showInputBox({
+            prompt: 'Enter archive password (required - minimum 6 characters)',
+            password: true,
+            validateInput: (value) => {
+                if (!value || value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                }
+                return null;
+            }
+        });
+        
+        if (!password) {
+            vscode.window.showWarningMessage('Archive creation cancelled - password required');
+            return;
+        }
+        
         const outputPath = await vscode.window.showSaveDialog({
             title: 'Save archive as',
             filters: {
-                'FileVault Archive': ['fvlt']
+                'FileVault Archive': ['fva']
             }
         });
         
@@ -762,19 +784,10 @@ async function createArchive() {
             return;
         }
         
-        const password = await vscode.window.showInputBox({
-            prompt: 'Enter archive password (optional)',
-            password: true,
-            placeHolder: 'Leave empty for no encryption'
-        });
-        
         const args = ['archive', 'create'];
         files.forEach(f => args.push(f.fsPath));
         args.push('-o', outputPath.fsPath);
-        
-        if (password && password.length > 0) {
-            args.push('-p', password);
-        }
+        args.push('-p', password);  // Always pass password
         
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
@@ -843,6 +856,8 @@ async function steganography(uri?: vscode.Uri) {
                 title: 'Hiding data...',
                 cancellable: false
             }, async () => {
+                // Note: Currently CLI doesn't support filename metadata
+                // User will need to manually rename extracted file
                 await runFileVault([
                     'stego',
                     'embed',
@@ -1117,29 +1132,66 @@ async function stegoExtract(uri?: vscode.Uri) {
             stegoImage = fileUri[0].fsPath;
         }
         
-        const outputPath = await vscode.window.showSaveDialog({
-            title: 'Save extracted data as',
-            defaultUri: vscode.Uri.file(stegoImage + '_extracted.dat')
-        });
-        
-        if (!outputPath) {
-            return;
+        // Extract to temp location first to get the actual filename from metadata
+        const tempDir = path.join(require('os').tmpdir(), 'filevault-extract');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
         }
+        
+        const tempOutput = path.join(tempDir, 'temp_extract');
+        
+        let extractedFilePath: string | undefined;
         
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: 'Extracting hidden data...',
             cancellable: false
         }, async () => {
+            // Extract to temp - CLI will rename based on metadata
             await runFileVault([
                 'stego', 'extract',
                 stegoImage,
-                outputPath.fsPath
+                tempOutput
             ]);
+            
+            // Find the actual extracted file (CLI renames it with original filename)
+            const tempFiles = fs.readdirSync(tempDir);
+            if (tempFiles.length === 0) {
+                throw new Error('No file was extracted');
+            }
+            
+            // CLI should have created a file with the original name
+            extractedFilePath = path.join(tempDir, tempFiles[0]);
         });
         
+        if (!extractedFilePath) {
+            throw new Error('Failed to extract file');
+        }
+        
+        // Now show save dialog with the correct original filename
+        const originalFilename = path.basename(extractedFilePath);
+        const imageDir = path.dirname(stegoImage);
+        
+        const outputPath = await vscode.window.showSaveDialog({
+            title: 'Save extracted file as',
+            defaultUri: vscode.Uri.file(path.join(imageDir, originalFilename)),
+            filters: {
+                'All Files': ['*']
+            }
+        });
+        
+        if (!outputPath) {
+            // Clean up temp file
+            fs.unlinkSync(extractedFilePath);
+            return;
+        }
+        
+        // Move from temp to final location
+        fs.copyFileSync(extractedFilePath, outputPath.fsPath);
+        fs.unlinkSync(extractedFilePath);
+        
         vscode.window.showInformationMessage(
-            `Data extracted to: ${path.basename(outputPath.fsPath)}`,
+            `Data extracted: ${path.basename(outputPath.fsPath)}`,
             'Open File',
             'Open Folder'
         ).then((result: any) => {
