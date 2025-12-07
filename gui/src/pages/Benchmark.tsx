@@ -6,7 +6,7 @@ import { Input } from '../components/Input';
 import { LogPanel } from '../components/LogPanel';
 import { benchmarkAlgorithm } from '../lib/cli';
 import type { LogEntry } from '../types';
-import { Zap, Award, AlertCircle, Loader2, TrendingUp } from 'lucide-react';
+import { Zap, Award, AlertCircle } from 'lucide-react';
 
 const algorithmOptions = [
   { value: 'all', label: 'All Algorithms' },
@@ -58,42 +58,157 @@ export function Benchmark() {
   const parseBenchmarkOutput = (output: string): BenchmarkResult[] => {
     const lines = output.split('\n');
     const parsed: BenchmarkResult[] = [];
+    let currentSection = '';
+    let headers: string[] = [];
     
-    for (const line of lines) {
-      // Try to parse different benchmark output formats
-      // Format 1: "Algorithm: AES-256-GCM | Operation: Encrypt | Time: 123.45ms | Throughput: 8.10 MB/s"
-      // Format 2: "AES-256-GCM: Encrypt: 123.45ms (8.10 MB/s)"
-      // Format 3: Table format with | separators
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
       
+      // Skip empty lines and separators
+      if (!line || line.startsWith('===') || line.startsWith('---') || line.startsWith('+')) {
+        continue;
+      }
+      
+      // Detect section headers
+      if (line.includes('SYMMETRIC') || line.includes('ASYMMETRIC') || line.includes('POST-QUANTUM') || 
+          line.includes('KEY DERIVATION') || line.includes('COMPRESSION') || line.includes('HASH')) {
+        currentSection = line;
+        headers = [];
+        continue;
+      }
+      
+      // Parse table rows with | separators
       if (line.includes('|')) {
-        const parts = line.split('|').map(p => p.trim());
-        if (parts.length >= 3) {
-          const algorithm = parts.find(p => p.includes('Algorithm') || /^[A-Z]/.test(p))?.replace('Algorithm:', '').trim() || '';
-          const operation = parts.find(p => p.includes('Operation') || p.includes('Encrypt') || p.includes('Decrypt'))?.replace('Operation:', '').trim() || '';
-          const time = parts.find(p => p.includes('Time') || p.includes('ms') || p.includes('s'))?.replace('Time:', '').trim() || '';
-          const throughput = parts.find(p => p.includes('Throughput') || p.includes('MB/s') || p.includes('GB/s'))?.replace('Throughput:', '').trim() || '';
+        const parts = line.split('|').map(p => p.trim()).filter(p => p && !p.match(/^[-+]+$/));
+        
+        // Detect header row (usually contains column names)
+        if (parts.some(p => /^(Algorithm|Variant|Operation|Encrypt|Decrypt|KeyGen|Encaps|Decaps|Sign|Verify|Compress|Decompress|Time|Throughput|Security|Notes|Digest|Rate|Memory|Ratio)$/i.test(p))) {
+          headers = parts;
+          continue;
+        }
+        
+        // Parse data rows
+        if (parts.length >= 2 && headers.length > 0) {
+          const algorithm = parts[0] || '';
           
-          if (algorithm || operation) {
+          // Skip if this looks like a header or separator
+          if (!algorithm || algorithm.match(/^(Algorithm|Variant|Operation)$/i)) {
+            continue;
+          }
+          
+          // Determine operation type based on section and columns
+          let operation = '';
+          let time = '';
+          let throughput = '';
+          
+          // Map headers to indices
+          const headerMap: { [key: string]: number } = {};
+          headers.forEach((h, idx) => {
+            headerMap[h.toLowerCase()] = idx;
+          });
+          
+          // Extract data based on section type
+          if (currentSection.includes('SYMMETRIC') || currentSection.includes('AEAD') || currentSection.includes('Block Cipher')) {
+            // Symmetric: Encrypt, Decrypt columns
+            if (headerMap['encrypt'] !== undefined && parts[headerMap['encrypt']]) {
+              operation = 'Encrypt';
+              throughput = parts[headerMap['encrypt']];
+            }
+            if (headerMap['decrypt'] !== undefined && parts[headerMap['decrypt']]) {
+              // Add decrypt as separate row if both exist
+              if (operation === 'Encrypt') {
+                parsed.push({
+                  algorithm,
+                  operation: 'Encrypt',
+                  time: '-',
+                  throughput: parts[headerMap['encrypt']] || '-',
+                  speed: parts[headerMap['encrypt']] || '-',
+                });
+              }
+              operation = 'Decrypt';
+              throughput = parts[headerMap['decrypt']];
+            }
+          } else if (currentSection.includes('ASYMMETRIC')) {
+            // Asymmetric: KeyGen, Encrypt, Decrypt columns
+            if (headerMap['keygen'] !== undefined && parts[headerMap['keygen']]) {
+              operation = 'KeyGen';
+              time = parts[headerMap['keygen']];
+            } else if (headerMap['encrypt'] !== undefined && parts[headerMap['encrypt']]) {
+              operation = 'Encrypt';
+              time = parts[headerMap['encrypt']];
+            } else if (headerMap['decrypt'] !== undefined && parts[headerMap['decrypt']]) {
+              operation = 'Decrypt';
+              time = parts[headerMap['decrypt']];
+            }
+          } else if (currentSection.includes('POST-QUANTUM') || currentSection.includes('Kyber') || currentSection.includes('Dilithium')) {
+            // Post-quantum: KeyGen, Encaps, Decaps, Sign, Verify
+            if (headerMap['keygen'] !== undefined && parts[headerMap['keygen']]) {
+              operation = 'KeyGen';
+              time = parts[headerMap['keygen']];
+            } else if (headerMap['encaps'] !== undefined && parts[headerMap['encaps']]) {
+              operation = 'Encaps';
+              time = parts[headerMap['encaps']];
+            } else if (headerMap['decaps'] !== undefined && parts[headerMap['decaps']]) {
+              operation = 'Decaps';
+              time = parts[headerMap['decaps']];
+            } else if (headerMap['sign'] !== undefined && parts[headerMap['sign']]) {
+              operation = 'Sign';
+              time = parts[headerMap['sign']];
+            } else if (headerMap['verify'] !== undefined && parts[headerMap['verify']]) {
+              operation = 'Verify';
+              time = parts[headerMap['verify']];
+            } else if (headerMap['encrypt'] !== undefined && parts[headerMap['encrypt']]) {
+              operation = 'Encrypt';
+              throughput = parts[headerMap['encrypt']];
+            } else if (headerMap['decrypt'] !== undefined && parts[headerMap['decrypt']]) {
+              operation = 'Decrypt';
+              throughput = parts[headerMap['decrypt']];
+            }
+          } else if (currentSection.includes('KEY DERIVATION')) {
+            // KDF: Time, Rate columns
+            if (headerMap['time'] !== undefined && parts[headerMap['time']]) {
+              operation = 'KDF';
+              time = parts[headerMap['time']];
+            }
+            if (headerMap['rate'] !== undefined && parts[headerMap['rate']]) {
+              throughput = parts[headerMap['rate']] + '/s';
+            }
+          } else if (currentSection.includes('COMPRESSION')) {
+            // Compression: Compress, Decompress columns
+            if (headerMap['compress'] !== undefined && parts[headerMap['compress']]) {
+              operation = 'Compress';
+              throughput = parts[headerMap['compress']];
+            }
+            if (headerMap['decompress'] !== undefined && parts[headerMap['decompress']]) {
+              if (operation === 'Compress') {
+                parsed.push({
+                  algorithm,
+                  operation: 'Compress',
+                  time: '-',
+                  throughput: parts[headerMap['compress']] || '-',
+                  speed: parts[headerMap['compress']] || '-',
+                });
+              }
+              operation = 'Decompress';
+              throughput = parts[headerMap['decompress']];
+            }
+          } else if (currentSection.includes('HASH')) {
+            // Hash: Throughput column
+            if (headerMap['throughput'] !== undefined && parts[headerMap['throughput']]) {
+              operation = 'Hash';
+              throughput = parts[headerMap['throughput']];
+            }
+          }
+          
+          if (algorithm && operation) {
             parsed.push({
-              algorithm: algorithm || 'Unknown',
-              operation: operation || 'Unknown',
+              algorithm,
+              operation,
               time: time || '-',
               throughput: throughput || '-',
-              speed: throughput || '-',
+              speed: throughput || time || '-',
             });
           }
-        }
-      } else if (line.includes(':') && (line.includes('ms') || line.includes('MB/s'))) {
-        // Format: "AES-256-GCM: Encrypt: 123.45ms (8.10 MB/s)"
-        const match = line.match(/([^:]+):\s*([^:]+):\s*([\d.]+(?:ms|s))\s*\(([\d.]+\s*(?:MB|GB)\/s)\)/);
-        if (match) {
-          parsed.push({
-            algorithm: match[1].trim(),
-            operation: match[2].trim(),
-            time: match[3].trim(),
-            throughput: match[4].trim(),
-            speed: match[4].trim(),
-          });
         }
       }
     }

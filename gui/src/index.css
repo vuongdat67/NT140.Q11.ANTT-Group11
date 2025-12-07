@@ -2,6 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom soft themes for FileVault */
+:root:has(input.theme-controller[value=filevault]:checked),
+[data-theme="filevault"] {
+  color-scheme: light;
+  --color-primary: #5b7cfa;
+  --color-primary-content: #0f172a;
+  --color-secondary: #7c9cf8;
+  --color-secondary-content: #0f172a;
+  --color-accent: #4ac6c8;
+  --color-accent-content: #0f172a;
+  --color-neutral: #243041;
+  --color-neutral-content: #e9eef8;
+  --color-base-100: #f7f8fb;
+  --color-base-200: #eef0f7;
+  --color-base-300: #e2e6f1;
+  --color-base-content: #1a2233;
+  --color-info: #4aa8e0;
+  --color-info-content: #0f172a;
+  --color-success: #52b788;
+  --color-success-content: #0f172a;
+  --color-warning: #e0a23b;
+  --color-warning-content: #0f172a;
+  --color-error: #e06c6c;
+  --color-error-content: #0f172a;
+}
+
+:root:has(input.theme-controller[value=filevaultDark]:checked),
+[data-theme="filevaultDark"] {
+  color-scheme: dark;
+  --color-primary: #8ab4ff;
+  --color-primary-content: #0b1020;
+  --color-secondary: #9db5ff;
+  --color-secondary-content: #0b1020;
+  --color-accent: #63d6d1;
+  --color-accent-content: #0b1020;
+  --color-neutral: #111827;
+  --color-neutral-content: #e5edff;
+  --color-base-100: #0f172a;
+  --color-base-200: #111827;
+  --color-base-300: #1f2937;
+  --color-base-content: #e5edff;
+  --color-info: #7cc7f8;
+  --color-info-content: #0b1020;
+  --color-success: #63d9a0;
+  --color-success-content: #0b1020;
+  --color-warning: #f4bf65;
+  --color-warning-content: #0b1020;
+  --color-error: #f28b82;
+  --color-error-content: #0b1020;
+}
+
 /* Ensure full height and proper theme background */
 html, body {
   height: 100%;
@@ -10,6 +61,7 @@ html, body {
 }
 
 /* Apply theme background to the entire page */
+/* Let daisyUI handle all theme styling through data-theme attribute */
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -19,29 +71,11 @@ body {
   @apply bg-base-100 text-base-content;
 }
 
-/* Improve checkbox visibility */
+/* Improve checkbox visibility - use daisyUI variables */
 .checkbox {
-  border-width: 2px;
-  border-color: hsl(var(--bc) / 0.3);
+  border-width: 1px;
 }
 
 .checkbox:checked {
   border-color: hsl(var(--p));
-}
-
-/* Ensure buttons have visible borders */
-.btn {
-  border-width: 2px;
-}
-
-.btn-outline {
-  border-color: hsl(var(--bc) / 0.2);
-}
-
-.btn-ghost {
-  border-color: transparent;
-}
-
-.btn-ghost:hover {
-  border-color: hsl(var(--bc) / 0.2);
 }

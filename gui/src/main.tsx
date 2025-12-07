@@ -5,7 +5,7 @@ import "./index.css";
 
 // Initialize theme BEFORE React renders (like Angular ngOnInit)
 // This ensures daisyUI theme is applied immediately
-const savedTheme = localStorage.getItem("theme") || "dark";
+const savedTheme = localStorage.getItem("theme") || "filevault";
 if (!document.documentElement.hasAttribute("data-theme")) {
   document.documentElement.setAttribute("data-theme", savedTheme);
 }

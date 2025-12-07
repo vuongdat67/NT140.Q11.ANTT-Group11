@@ -1,4 +1,4 @@
-import { Activity, FileText, CheckCircle2, XCircle, Clock, FileIcon, Trash2 } from 'lucide-react';
+import { Activity, FileText, CheckCircle2, XCircle, FileIcon, Trash2 } from 'lucide-react';
 import { Card } from '../components/Card';
 import { useState, useEffect } from 'react';
 import { getOperationStats, formatBytes, getRecentFiles, clearRecentFiles, type RecentFile } from '../lib/preferences';
@@ -9,11 +9,11 @@ export function Dashboard() {
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>(getRecentFiles());
 
   useEffect(() => {
-    // Refresh stats and recent files every 2 seconds
+    // Refresh stats and recent files every 1 second for better responsiveness
     const interval = setInterval(() => {
       setStats(getOperationStats());
       setRecentFiles(getRecentFiles());
-    }, 2000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 

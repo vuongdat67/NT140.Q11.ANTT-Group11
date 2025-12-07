@@ -119,17 +119,27 @@ int EncryptCommand::execute() {
     try {
         utils::Console::header("FileVault Encryption");
         
-        // Apply mode preset if specified
+        // Apply mode preset if specified (only for options not explicitly set)
         if (!mode_.empty()) {
             auto user_mode = core::ModePreset::parse_mode(mode_);
             auto preset = core::ModePreset::get_preset(user_mode);
             
-            // Override settings with preset
-            algorithm_ = engine_.algorithm_name(preset.algorithm);
-            kdf_ = engine_.kdf_name(preset.kdf);
-            security_level_ = engine_.security_level_name(preset.security_level);
-            compression_type_ = compression::CompressionService::get_algorithm_name(preset.compression);
-            compression_level_ = preset.compression_level;
+            // Only apply preset values if user didn't explicitly specify the option
+            if (algorithm_.empty()) {
+                algorithm_ = engine_.algorithm_name(preset.algorithm);
+            }
+            if (kdf_.empty()) {
+                kdf_ = engine_.kdf_name(preset.kdf);
+            }
+            if (security_level_.empty()) {
+                security_level_ = engine_.security_level_name(preset.security_level);
+            }
+            if (compression_type_.empty()) {
+                compression_type_ = compression::CompressionService::get_algorithm_name(preset.compression);
+            }
+            if (compression_level_ == 0) {
+                compression_level_ = preset.compression_level;
+            }
             
             utils::Console::info(fmt::format("Using {} mode: {}", 
                                preset.name(), preset.description()));
@@ -213,12 +223,13 @@ int EncryptCommand::execute() {
         
         // Step 1: Compress if requested
         bool compressed = false;
+        core::CompressionType comp_type = core::CompressionType::NONE;
         size_t original_size = plaintext.size();
         
         if (compression_type_ != "none") {
             utils::Console::info(fmt::format("Compressing with {}...", compression_type_));
             
-            auto comp_type = compression::CompressionService::parse_algorithm(compression_type_);
+            comp_type = compression::CompressionService::parse_algorithm(compression_type_);
             
             auto compressor = compression::CompressionService::create(comp_type);
             if (!compressor) {
@@ -359,7 +370,7 @@ int EncryptCommand::execute() {
         }
         
         // Create enhanced file header
-        config.compression = compressed ? core::CompressionType::ZLIB : core::CompressionType::NONE;
+        config.compression = compressed ? comp_type : core::CompressionType::NONE;
         auto header = core::FileFormatHandler::create_header(
             algo_type,
             kdf_type,

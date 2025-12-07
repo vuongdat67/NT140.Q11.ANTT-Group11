@@ -8,7 +8,7 @@ import { LogPanel } from '../components/LogPanel';
 import { ProgressBar } from '../components/ProgressBar';
 import { encryptFile } from '../lib/cli';
 import { usePageState } from '../lib/usePageState';
-import { addRecentFile } from '../lib/preferences';
+import { addRecentFile, updateOperationStats } from '../lib/preferences';
 import type { Algorithm, Mode, KDFAlgorithm, LogEntry } from '../types';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -131,6 +131,14 @@ export function Encrypt() {
     setIsProcessing(true);
     setProgress(0);
     addLog('info', 'Starting encryption...');
+    addLog('info', `Algorithm: ${algorithm}`);
+    addLog('info', `Mode: ${mode}`);
+    addLog('info', `KDF: ${kdf}`);
+    if (enableCompression) {
+      addLog('info', `Compression: ${compression.toUpperCase()}`);
+    } else {
+      addLog('info', 'Compression: Disabled');
+    }
 
     try {
       const result = await encryptFile({
@@ -152,6 +160,8 @@ export function Encrypt() {
         if (outputFile) {
           addRecentFile(outputFile, 'encrypt', true);
         }
+        // Update operation stats
+        updateOperationStats('encrypt', true, 1, 0);
       } else {
         addLog('error', 'Encryption failed: ' + (result.error || result.stderr));
         if (result.stdout) addLog('info', 'CLI output: ' + result.stdout);
@@ -159,6 +169,8 @@ export function Encrypt() {
         if (outputFile) {
           addRecentFile(outputFile, 'encrypt', false);
         }
+        // Update operation stats
+        updateOperationStats('encrypt', false, 1, 0);
       }
     } catch (error) {
       addLog('error', 'Unexpected error: ' + String(error));

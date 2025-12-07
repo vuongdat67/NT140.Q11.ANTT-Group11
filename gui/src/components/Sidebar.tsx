@@ -11,6 +11,7 @@ import {
   Shield,
   Zap,
   Info,
+  FileCode,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -27,6 +28,7 @@ const navItems = [
   { path: '/compress', icon: Archive, label: 'Compress' },
   { path: '/benchmark', icon: Zap, label: 'Benchmark' },
   { path: '/info', icon: Info, label: 'File Info' },
+  { path: '/dump', icon: FileCode, label: 'Dump' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 

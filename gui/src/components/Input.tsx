@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../lib/utils';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   variant?: 'default' | 'primary' | 'secondary' | 'accent' | 'ghost';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   error?: boolean;

@@ -1,5 +1,14 @@
 # FileVault Changelog
 
+## [1.1.1] - December 7, 2025
+
+### Changed
+- GUI: Added soft FileVault light/dark themes and made them default for a calmer UI; theme toggle now swaps between the new pair.
+- GUI: Button/select styling now follows the softened palette across components.
+- Documentation: Added `gui/RELEASE.md` describing cross-platform Tauri release workflow (Windows/macOS/Linux).
+
+---
+
 ## [1.1.0] - December 5, 2025
 
 ### Added

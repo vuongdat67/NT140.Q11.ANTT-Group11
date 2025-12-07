@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../lib/utils';
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   options: Array<{ value: string; label: string }>;
   variant?: 'default' | 'primary' | 'secondary' | 'accent' | 'ghost';
   size?: 'xs' | 'sm' | 'md' | 'lg';

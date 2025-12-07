@@ -1,4 +1,6 @@
 export const themes = [
+  "filevault",
+  "filevaultDark",
   "light",
   "dark",
   "cupcake",
@@ -23,18 +25,32 @@ export const themes = [
 ];
 
 export const getTheme = (): string => {
-  return localStorage.getItem("theme") || "dark";
+  return localStorage.getItem("theme") || "filevault";
 };
 
 export const setTheme = (theme: string): void => {
   localStorage.setItem("theme", theme);
-  // Force theme update by removing and re-adding attribute
-  document.documentElement.removeAttribute("data-theme");
-  // Use requestAnimationFrame to ensure DOM update
+  
+  // Force theme update - similar to Angular example
+  const element = document.activeElement as HTMLElement;
+  if (element) {
+    element.blur(); // Remove focus from the button
+  }
+  
+  // Remove old theme first to force CSS recalculation
+  const html = document.documentElement;
+  html.removeAttribute("data-theme");
+  
+  // Use requestAnimationFrame to ensure DOM is ready
   requestAnimationFrame(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    // Force a reflow to ensure styles are applied
-    document.documentElement.offsetHeight;
+    // Set new theme attribute
+    html.setAttribute("data-theme", theme);
+    
+    // Force a reflow to ensure styles are applied immediately
+    void html.offsetHeight;
+    
+    // Trigger a custom event for any components that need to react
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
   });
 };
 

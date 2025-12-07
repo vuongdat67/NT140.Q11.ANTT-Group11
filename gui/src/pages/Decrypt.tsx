@@ -7,7 +7,7 @@ import { LogPanel } from '../components/LogPanel';
 import { ProgressBar } from '../components/ProgressBar';
 import { decryptFile } from '../lib/cli';
 import { usePageState } from '../lib/usePageState';
-import { addRecentFile } from '../lib/preferences';
+import { addRecentFile, updateOperationStats } from '../lib/preferences';
 import type { LogEntry } from '../types';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -65,12 +65,16 @@ export function Decrypt() {
         if (outputFile) {
           addRecentFile(outputFile, 'decrypt', true);
         }
+        // Update operation stats
+        updateOperationStats('decrypt', true, 1, 0);
       } else {
         addLog('error', 'Decryption failed: ' + (result.error || result.stderr));
         // Add to recent files even if failed
         if (outputFile) {
           addRecentFile(outputFile, 'decrypt', false);
         }
+        // Update operation stats
+        updateOperationStats('decrypt', false, 1, 0);
       }
     } catch (error) {
       addLog('error', 'Unexpected error: ' + String(error));

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Button } from '../components/Button';
+import { LogPanel } from '../components/LogPanel';
 import { getFileInfo } from '../lib/cli';
+import type { LogEntry } from '../types';
 import { Info as InfoIcon, Shield, Zap, Package, Lock } from 'lucide-react';
 
 interface FileInfoData {
@@ -26,7 +28,12 @@ export function Info() {
   const [verbose, setVerbose] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileInfo, setFileInfo] = useState<FileInfoData | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [error, setError] = useState('');
+
+  const addLog = (level: LogEntry['level'], message: string) => {
+    setLogs((prev) => [...prev, { timestamp: new Date(), level, message }]);
+  };
 
   const parseFileInfo = (output: string): FileInfoData | null => {
     try {
@@ -60,6 +67,7 @@ export function Info() {
 
   const handleGetInfo = async () => {
     if (!inputFile) {
+      addLog('error', 'Please select an encrypted file');
       setError('Please select an encrypted file');
       return;
     }
@@ -67,22 +75,45 @@ export function Info() {
     setIsProcessing(true);
     setError('');
     setFileInfo(null);
+    setLogs([]);
+    addLog('info', 'Reading file information...');
+    addLog('info', `File: ${inputFile}`);
+    addLog('info', `Verbose mode: ${verbose ? 'enabled' : 'disabled'}`);
 
     try {
-      const result = await getFileInfo({ input: inputFile, verbose }, () => {});
+      const result = await getFileInfo(
+        { input: inputFile, verbose },
+        (log) => {
+          addLog(log.level, log.message);
+        }
+      );
 
       if (result.success && result.stdout) {
+        addLog('success', 'File information retrieved successfully');
+        // Log all output lines
+        result.stdout.split('\n').forEach((line) => {
+          if (line.trim()) {
+            addLog('info', line);
+          }
+        });
+        
         const parsed = parseFileInfo(result.stdout);
         if (parsed) {
           setFileInfo(parsed);
+          addLog('success', 'File information parsed successfully');
         } else {
+          addLog('warning', 'Failed to parse file information, showing raw output');
           setError('Failed to parse file information');
         }
       } else {
-        setError(result.error || result.stderr || 'Failed to get file info');
+        const errorMsg = result.error || result.stderr || 'Failed to get file info';
+        addLog('error', errorMsg);
+        setError(errorMsg);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unknown error');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addLog('error', errorMsg);
+      setError(errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -104,8 +135,8 @@ export function Info() {
             <FilePicker
               value={inputFile}
               onChange={setInputFile}
-              placeholder="Select encrypted file (.fvlt)"
-              accept={['fvlt']}
+              placeholder="Select encrypted file (.enc)"
+              accept={['enc']}
             />
           </div>
 
@@ -137,6 +168,12 @@ export function Info() {
           )}
         </div>
       </Card>
+
+      {logs.length > 0 && (
+        <Card title="Logs">
+          <LogPanel logs={logs} maxHeight="400px" />
+        </Card>
+      )}
 
       {fileInfo && (
         <>

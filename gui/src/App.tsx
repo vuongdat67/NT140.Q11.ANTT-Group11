@@ -12,6 +12,7 @@ import { Archive } from './pages/Archive';
 import { Compress } from './pages/Compress';
 import { Benchmark } from './pages/Benchmark';
 import { Info } from './pages/Info';
+import { Dump } from './pages/Dump';
 import { Settings } from './pages/Settings';
 import { initializeTheme } from './lib/themes';
 import './index.css';
@@ -39,6 +40,7 @@ function App() {
             <Route path="/compress" element={<Compress />} />
             <Route path="/benchmark" element={<Benchmark />} />
             <Route path="/info" element={<Info />} />
+            <Route path="/dump" element={<Dump />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

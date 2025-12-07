@@ -356,3 +356,47 @@ export async function getFileInfo(
 
   return result;
 }
+
+/**
+ * Dump file in hex, binary, or base64 format
+ */
+export async function dumpFile(
+  options: {
+    input: string;
+    format?: 'hex' | 'binary' | 'base64';
+    maxBytes?: number;
+    showOffset?: boolean;
+    showAscii?: boolean;
+  },
+  onLog?: (log: { level: 'info' | 'success' | 'warning' | 'error'; message: string }) => void
+): Promise<CommandResult> {
+  const args = ['dump', options.input];
+
+  if (options.format) {
+    args.push('-f', options.format);
+  }
+
+  if (options.maxBytes !== undefined && options.maxBytes > 0) {
+    args.push('-n', options.maxBytes.toString());
+  }
+
+  if (options.showOffset === false) {
+    args.push('--no-offset');
+  }
+
+  if (options.showAscii === false && options.format === 'hex') {
+    args.push('--no-ascii');
+  }
+
+  const result = await executeCommand(args);
+
+  if (onLog && result.stdout) {
+    result.stdout.split('\n').forEach((line) => {
+      if (line.trim()) {
+        onLog({ level: 'info', message: line });
+      }
+    });
+  }
+
+  return result;
+}

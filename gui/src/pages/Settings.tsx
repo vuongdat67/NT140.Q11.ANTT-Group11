@@ -37,7 +37,7 @@ export function Settings() {
   };
 
   const toggleLightDark = () => {
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    const newTheme = currentTheme === 'filevault' ? 'filevaultDark' : 'filevault';
     setCurrentTheme(newTheme);
   };
 
