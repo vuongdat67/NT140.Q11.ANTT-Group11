@@ -93,44 +93,25 @@ export function Encrypt() {
   const [enableCompression, setEnableCompression] = usePageState('encrypt_enableCompression', false);
   const [secureDelete, setSecureDelete] = usePageState('encrypt_secureDelete', false);
 
-  // Store initial default values to compare later
-  const [initialDefaults, setInitialDefaults] = useState(() => ({
-    encrypt: defaults.encrypt || 'aes-256-gcm',
-    kdf: defaults.kdf || 'argon2id',
-    compression: defaults.compression || 'zlib',
-  }));
-
-  // Sync encrypt defaults (algo, kdf, compression) with Settings when they change
+  // Sync with default algorithms from Settings (similar to Hash and Compress)
   useEffect(() => {
     const handleDefaultsChange = () => {
       const latest = getDefaults();
-      const newDefaults = {
-        encrypt: latest.encrypt || 'aes-256-gcm',
-        kdf: latest.kdf || 'argon2id',
-        compression: latest.compression || 'zlib',
-      };
-
-      // Only update if current value matches the initial default (user hasn't manually changed it)
-      if (algorithm === initialDefaults.encrypt && algorithm !== newDefaults.encrypt) {
-        setAlgorithm(newDefaults.encrypt);
-      }
-      if (kdf === initialDefaults.kdf && kdf !== newDefaults.kdf) {
-        setKdf(newDefaults.kdf as KDFAlgorithm);
-      }
-      if (compression === initialDefaults.compression && compression !== newDefaults.compression) {
-        setCompression(newDefaults.compression);
-      }
-
-      // Update initial defaults for next comparison
-      setInitialDefaults(newDefaults);
+      console.log('Encrypt: defaultsChanged event, new values:', latest);
+      setAlgorithm(latest.encrypt || 'aes-256-gcm');
+      setKdf((latest.kdf || 'argon2id') as KDFAlgorithm);
+      setCompression(latest.compression || 'zlib');
     };
+
+    // run once on mount to sync current defaults
+    handleDefaultsChange();
 
     window.addEventListener('defaultsChanged', handleDefaultsChange);
 
     return () => {
       window.removeEventListener('defaultsChanged', handleDefaultsChange);
     };
-  }, [algorithm, kdf, compression, initialDefaults, setAlgorithm, setKdf, setCompression]);
+  }, [setAlgorithm, setKdf, setCompression]);
   
   // Don't persist sensitive data
   const [password, setPassword] = useState('');

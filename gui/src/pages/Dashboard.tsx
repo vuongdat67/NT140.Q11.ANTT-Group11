@@ -3,11 +3,24 @@ import { Card } from '../components/Card';
 import { useState, useEffect } from 'react';
 import { getOperationStats, formatBytes, getRecentFiles, clearRecentFiles, type RecentFile } from '../lib/preferences';
 import { Button } from '../components/Button';
-import { openPath } from '@tauri-apps/plugin-opener';
+import { open } from '@tauri-apps/plugin-shell';
 
 export function Dashboard() {
   const [stats, setStats] = useState(getOperationStats());
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>(getRecentFiles());
+
+  // Try opening via file:// URI; fallback to raw path if needed
+  const openPath = async (target: string) => {
+    const fileUrl = target.startsWith('file://')
+      ? target
+      : 'file://' + target.replace(/\\/g, '/');
+    try {
+      await open(fileUrl);
+    } catch (err) {
+      console.error('shell.open failed, retrying raw path', err);
+      await open(target);
+    }
+  };
 
   useEffect(() => {
     // Refresh stats and recent files every 1 second for better responsiveness
@@ -172,11 +185,9 @@ export function Dashboard() {
                               console.error('File path is empty');
                               return;
                             }
-                            // Use opener plugin for better file/folder handling
                             await openPath(file.path);
                           } catch (error) {
                             console.error('Failed to open file:', error);
-                            // Show user-friendly error
                             alert(`Failed to open file: ${file.path}\n${error instanceof Error ? error.message : String(error)}`);
                           }
                         }}
@@ -191,12 +202,11 @@ export function Dashboard() {
                           try {
                             const dir = file.path.replace(/[/\\][^/\\]+$/, '');
                             if (dir) {
-                              // Open folder in file manager using opener plugin
                               await openPath(dir);
                             }
                           } catch (error) {
-                            const dir = file.path.replace(/[/\\][^/\\]+$/, '');
                             console.error('Failed to open folder:', error);
+                            const dir = file.path.replace(/[/\\][^/\\]+$/, '');
                             alert(`Failed to open folder: ${dir}\n${error instanceof Error ? error.message : String(error)}`);
                           }
                         }}
