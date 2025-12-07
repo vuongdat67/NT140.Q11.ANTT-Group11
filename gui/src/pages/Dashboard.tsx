@@ -9,17 +9,19 @@ export function Dashboard() {
   const [stats, setStats] = useState(getOperationStats());
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>(getRecentFiles());
 
-  // Try opening via file:// URI; fallback to raw path if needed
+  // Try raw path first (Windows friendly), fallback to file:// URI
   const openPath = async (target: string) => {
+    try {
+      await open(target);
+      return;
+    } catch (err) {
+      console.error('shell.open raw path failed, retrying file://', err);
+    }
+
     const fileUrl = target.startsWith('file://')
       ? target
       : 'file://' + target.replace(/\\/g, '/');
-    try {
-      await open(fileUrl);
-    } catch (err) {
-      console.error('shell.open failed, retrying raw path', err);
-      await open(target);
-    }
+    await open(fileUrl);
   };
 
   useEffect(() => {

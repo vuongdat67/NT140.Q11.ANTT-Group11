@@ -37,9 +37,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "bin/filevault.exe"
-    ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
