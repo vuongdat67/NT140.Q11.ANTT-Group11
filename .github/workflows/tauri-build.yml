@@ -70,7 +70,9 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             gui/src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('gui/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Build and bundle Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -81,9 +83,30 @@ jobs:
           projectPath: gui
           args: --verbose
 
+      - name: Find bundle files
+        id: find-bundle
+        shell: bash
+        run: |
+          BUNDLE_DIR="gui/src-tauri/target/release/bundle"
+          if [ -d "$BUNDLE_DIR" ]; then
+            find "$BUNDLE_DIR" -type f \( -name "*.msi" -o -name "*.exe" -o -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \) | head -20
+            echo "bundle_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "bundle_exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Bundle directory not found: $BUNDLE_DIR"
+          fi
+
       - name: Upload installers
+        if: steps.find-bundle.outputs.bundle_exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: tauri-${{ matrix.platform }}
           path: |
-            gui/src-tauri/target/release/bundle/**
+            gui/src-tauri/target/release/bundle/**/*.msi
+            gui/src-tauri/target/release/bundle/**/*.exe
+            gui/src-tauri/target/release/bundle/**/*.dmg
+            gui/src-tauri/target/release/bundle/**/*.app.tar.gz
+            gui/src-tauri/target/release/bundle/**/*.AppImage
+            gui/src-tauri/target/release/bundle/**/*.deb
+            gui/src-tauri/target/release/bundle/**/*.rpm
+          if-no-files-found: warn
