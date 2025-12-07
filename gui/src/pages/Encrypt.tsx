@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Input } from '../components/Input';
@@ -8,7 +8,7 @@ import { LogPanel } from '../components/LogPanel';
 import { ProgressBar } from '../components/ProgressBar';
 import { encryptFile } from '../lib/cli';
 import { usePageState } from '../lib/usePageState';
-import { addRecentFile, updateOperationStats } from '../lib/preferences';
+import { addRecentFile, getDefaults, updateOperationStats } from '../lib/preferences';
 import type { Algorithm, Mode, KDFAlgorithm, LogEntry } from '../types';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -82,15 +82,41 @@ const kdfOptions = [
 ];
 
 export function Encrypt() {
+  const defaults = useMemo(() => getDefaults(), []);
   // Use persisted state for form fields (but not sensitive data like passwords)
   const [inputFile, setInputFile] = usePageState('encrypt_inputFile', '');
   const [outputFile, setOutputFile] = usePageState('encrypt_outputFile', '');
-  const [algorithm, setAlgorithm] = usePageState<Algorithm>('encrypt_algorithm', 'aes-256-gcm');
+  const [algorithm, setAlgorithm] = usePageState<Algorithm>('encrypt_algorithm', defaults.encrypt || 'aes-256-gcm');
   const [mode, setMode] = usePageState<Mode>('encrypt_mode', 'standard');
-  const [kdf, setKdf] = usePageState<KDFAlgorithm>('encrypt_kdf', 'argon2id');
-  const [compression, setCompression] = usePageState('encrypt_compression', 'zlib');
+  const [kdf, setKdf] = usePageState<KDFAlgorithm>('encrypt_kdf', defaults.kdf || 'argon2id');
+  const [compression, setCompression] = usePageState('encrypt_compression', defaults.compression || 'zlib');
   const [enableCompression, setEnableCompression] = usePageState('encrypt_enableCompression', false);
   const [secureDelete, setSecureDelete] = usePageState('encrypt_secureDelete', false);
+
+  // Sync encrypt defaults (algo, kdf, compression) with Settings when they change
+  useEffect(() => {
+    const handleDefaultsChange = () => {
+      const latest = getDefaults();
+      if (algorithm === defaults.encrypt) {
+        setAlgorithm(latest.encrypt || 'aes-256-gcm');
+      }
+      if (kdf === defaults.kdf) {
+        setKdf((latest.kdf || 'argon2id') as KDFAlgorithm);
+      }
+      if (compression === defaults.compression) {
+        setCompression(latest.compression || 'zlib');
+      }
+    };
+
+    window.addEventListener('defaultsChanged', handleDefaultsChange);
+
+    // On mount, refresh from current defaults if unchanged by user
+    handleDefaultsChange();
+
+    return () => {
+      window.removeEventListener('defaultsChanged', handleDefaultsChange);
+    };
+  }, [algorithm, kdf, compression, defaults.encrypt, defaults.kdf, defaults.compression, setAlgorithm, setKdf, setCompression]);
   
   // Don't persist sensitive data
   const [password, setPassword] = useState('');
@@ -181,8 +207,11 @@ export function Encrypt() {
 
   const handleInputChange = (path: string) => {
     setInputFile(path);
-    if (!outputFile) {
-      setOutputFile(path + '.enc');
+    if (!outputFile || outputFile === '' || outputFile.endsWith('.fvlt')) {
+      // Preserve original extension like compress does
+      // Example: "output_stego.png" -> "output_stego.png.fvlt"
+      const derived = path ? `${path}.fvlt` : '';
+      setOutputFile(derived);
     }
   };
 
@@ -208,7 +237,7 @@ export function Encrypt() {
               type="text"
               value={outputFile}
               onChange={(e) => setOutputFile(e.target.value)}
-              placeholder="encrypted_file.enc"
+              placeholder="encrypted_file.fvlt"
             />
           </div>
         </div>

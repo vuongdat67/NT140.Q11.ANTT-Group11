@@ -15,7 +15,7 @@ export function Stego() {
   const [container, setContainer] = useState('');
   const [payload, setPayload] = useState('');
   const [output, setOutput] = useState('');
-  const [bits, setBits] = useState(2); // Bits per channel (1-8)
+  const [bits, setBits] = useState(1); // Bits per channel (1-4 per CLI)
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -177,14 +177,14 @@ export function Stego() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Bits Per Channel (1-8)</label>
+                <label className="block text-sm font-medium mb-2">Bits Per Channel (1-4)</label>
                 <Input
                   type="number"
                   min={1}
-                  max={8}
+                  max={4}
                   value={bits}
-                  onChange={(e) => setBits(Number(e.target.value))}
-                  placeholder="2"
+                  onChange={(e) => setBits(Math.min(4, Math.max(1, Number(e.target.value))))}
+                  placeholder="1"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   Higher values = more capacity but more visible changes
@@ -228,14 +228,14 @@ export function Stego() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Bits Per Channel (1-8)</label>
+                <label className="block text-sm font-medium mb-2">Bits Per Channel (1-4)</label>
                 <Input
                   type="number"
                   min={1}
-                  max={8}
+                  max={4}
                   value={bits}
-                  onChange={(e) => setBits(Number(e.target.value))}
-                  placeholder="2"
+                  onChange={(e) => setBits(Math.min(4, Math.max(1, Number(e.target.value))))}
+                  placeholder="1"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   Must match the value used during hiding

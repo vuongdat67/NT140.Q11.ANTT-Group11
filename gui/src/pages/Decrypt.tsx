@@ -85,8 +85,22 @@ export function Decrypt() {
 
   const handleInputChange = (path: string) => {
     setInputFile(path);
-    if (!outputFile && path.endsWith('.enc')) {
-      setOutputFile(path.replace('.enc', ''));
+    if (!outputFile || outputFile === '') {
+      // Remove .fvlt extension but preserve original extension
+      // Example: "output_stego.png.fvlt" -> "output_stego.png"
+      const knownExts = ['.fvlt', '.enc', '.encrypted', '.fv'];
+      let output = path;
+      for (const ext of knownExts) {
+        if (path.toLowerCase().endsWith(ext)) {
+          output = path.slice(0, -ext.length);
+          break;
+        }
+      }
+      // If no known extension found, add .decrypted
+      if (output === path && path) {
+        output = `${path}.decrypted`;
+      }
+      setOutputFile(output);
     }
   };
 
@@ -103,7 +117,7 @@ export function Decrypt() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Encrypted File</label>
-            <FilePicker value={inputFile} onChange={handleInputChange} accept={['enc']} />
+            <FilePicker value={inputFile} onChange={handleInputChange} accept={['fvlt']} />
           </div>
 
           <div>

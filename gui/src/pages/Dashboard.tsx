@@ -1,8 +1,9 @@
-import { Activity, FileText, CheckCircle2, XCircle, FileIcon, Trash2 } from 'lucide-react';
+import { Activity, FileText, CheckCircle2, XCircle, FileIcon, Trash2, ExternalLink, FolderOpen } from 'lucide-react';
 import { Card } from '../components/Card';
 import { useState, useEffect } from 'react';
 import { getOperationStats, formatBytes, getRecentFiles, clearRecentFiles, type RecentFile } from '../lib/preferences';
 import { Button } from '../components/Button';
+import { open } from '@tauri-apps/plugin-shell';
 
 export function Dashboard() {
   const [stats, setStats] = useState(getOperationStats());
@@ -162,6 +163,44 @@ export function Dashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          try {
+                            if (!file.path) {
+                              console.error('File path is empty');
+                              return;
+                            }
+                            await open(file.path);
+                          } catch (error) {
+                            console.error('Failed to open file:', error);
+                            // Show user-friendly error
+                            alert(`Failed to open file: ${file.path}\n${error instanceof Error ? error.message : String(error)}`);
+                          }
+                        }}
+                        title="Open file"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          try {
+                            const dir = file.path.replace(/[/\\][^/\\]+$/, '');
+                            if (dir) {
+                              // Open folder in file manager
+                              await open(dir);
+                            }
+                          } catch (error) {
+                            console.error('Failed to open folder:', error);
+                          }
+                        }}
+                        title="Show in folder"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                      </Button>
                       {file.success ? (
                         <CheckCircle2 className="w-5 h-5 text-success" />
                       ) : (

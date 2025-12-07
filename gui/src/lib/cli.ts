@@ -269,11 +269,20 @@ export async function compressFile(options: CompressOptions): Promise<CommandRes
  */
 export async function decompressFile(options: DecompressOptions): Promise<CommandResult> {
   const args = [
-    'decompress',
+    'compress',
     options.input,
     '-o',
     options.output,
+    '-d',
   ];
+
+  if (options.autoDetect !== false) {
+    args.push('--auto-detect');
+  }
+
+  if (options.algorithm) {
+    args.push('-a', options.algorithm.toLowerCase());
+  }
 
   return executeCommand(args);
 }

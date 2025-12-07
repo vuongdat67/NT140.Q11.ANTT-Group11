@@ -18,7 +18,7 @@ const formatOptions = [
 export function Dump() {
   const [inputFile, setInputFile] = useState('');
   const [format, setFormat] = useState<'hex' | 'binary' | 'base64'>('hex');
-  const [maxBytes, setMaxBytes] = useState('');
+  const [maxBytes, setMaxBytes] = useState('4096');
   const [showOffset, setShowOffset] = useState(true);
   const [showAscii, setShowAscii] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -130,7 +130,7 @@ export function Dump() {
                 min="0"
                 value={maxBytes}
                 onChange={(e) => setMaxBytes(e.target.value)}
-                placeholder="0"
+                placeholder="4096"
               />
             </div>
           </div>

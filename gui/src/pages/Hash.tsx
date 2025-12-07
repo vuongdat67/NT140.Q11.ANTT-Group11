@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Select } from '../components/Select';
@@ -8,6 +8,7 @@ import { LogPanel } from '../components/LogPanel';
 import { hashFile } from '../lib/cli';
 import type { HashAlgorithm, LogEntry } from '../types';
 import { Copy, Check } from 'lucide-react';
+import { getDefaults } from '../lib/preferences';
 
 const algorithmOptions = [
   // SHA-2 family
@@ -17,20 +18,15 @@ const algorithmOptions = [
   { value: 'sha224', label: 'SHA-224' },
   { value: 'sha512-256', label: 'SHA-512/256' },
   // SHA-3 family
+  { value: 'sha3-224', label: 'SHA3-224' },
   { value: 'sha3-256', label: 'SHA3-256' },
   { value: 'sha3-384', label: 'SHA3-384' },
   { value: 'sha3-512', label: 'SHA3-512' },
   // BLAKE2
-  { value: 'blake2b-512', label: 'BLAKE2b-512' },
   { value: 'blake2b-256', label: 'BLAKE2b-256' },
+  { value: 'blake2b-384', label: 'BLAKE2b-384' },
+  { value: 'blake2b-512', label: 'BLAKE2b-512' },
   { value: 'blake2s-256', label: 'BLAKE2s-256' },
-  // Other modern
-  { value: 'ripemd-160', label: 'RIPEMD-160' },
-  { value: 'whirlpool', label: 'Whirlpool' },
-  { value: 'tiger', label: 'Tiger' },
-  { value: 'sm3', label: 'SM3 (Chinese Standard)' },
-  { value: 'streebog-512', label: 'Streebog-512 (GOST)' },
-  { value: 'streebog-256', label: 'Streebog-256 (GOST)' },
   // Legacy (weak)
   { value: 'sha1', label: 'SHA-1 (Legacy - Weak)' },
   { value: 'md5', label: 'MD5 (Legacy - Weak)' },
@@ -43,8 +39,9 @@ const formatOptions = [
 ];
 
 export function Hash() {
+  const defaults = useMemo(() => getDefaults(), []);
   const [inputFile, setInputFile] = useState('');
-  const [algorithm, setAlgorithm] = useState<HashAlgorithm>('sha256');
+  const [algorithm, setAlgorithm] = useState<HashAlgorithm>(defaults.hash || 'sha256');
   const [format, setFormat] = useState<'hex' | 'base64' | 'binary'>('hex');
   const [hashResult, setHashResult] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);

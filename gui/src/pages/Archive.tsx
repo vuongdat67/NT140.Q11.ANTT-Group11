@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Input } from '../components/Input';
@@ -10,6 +10,7 @@ import { createArchive, extractArchive } from '../lib/cli';
 import type { CompressionAlgorithm, LogEntry } from '../types';
 import { Plus, X, Files, FileUp } from 'lucide-react';
 import { open, save } from '@tauri-apps/plugin-dialog';
+import { getDefaults } from '../lib/preferences';
 
 const compressionOptions = [
   { value: 'LZMA', label: 'LZMA (Best compression)' },
@@ -18,13 +19,19 @@ const compressionOptions = [
 ];
 
 export function Archive() {
+  const defaults = useMemo(() => getDefaults(), []);
+  const defaultCompression = useMemo<CompressionAlgorithm>(() => {
+    const preferred = (defaults.compression || '').toUpperCase();
+    if (preferred === 'ZLIB' || preferred === 'LZMA') return preferred as CompressionAlgorithm;
+    if (preferred === 'BZIP2') return 'BZIP2';
+    return 'LZMA';
+  }, [defaults]);
   const [mode, setMode] = useState<'create' | 'extract'>('create');
   const [files, setFiles] = useState<string[]>([]);
   const [newFile, setNewFile] = useState('');
   const [archivePath, setArchivePath] = useState('');
   const [extractPath, setExtractPath] = useState('');
-  const [compression, setCompression] = useState<CompressionAlgorithm>('LZMA');
-  const [encrypt, setEncrypt] = useState(false);
+  const [compression, setCompression] = useState<CompressionAlgorithm>(defaultCompression);
   const [password, setPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -81,7 +88,7 @@ export function Archive() {
       addLog('error', 'Please specify archive output path');
       return;
     }
-    if (encrypt && !password) {
+    if (!password) {
       addLog('error', 'Please enter password for encryption');
       return;
     }
@@ -95,8 +102,8 @@ export function Archive() {
         files,
         output: archivePath,
         compression,
-        encrypt,
-        password: encrypt ? password : undefined,
+        encrypt: true,
+        password,
       });
 
       setProgress(100);
@@ -254,27 +261,16 @@ export function Archive() {
                 </p>
               </div>
 
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={encrypt}
-                  onChange={(e) => setEncrypt(e.target.checked)}
-                  className="rounded"
+              <div>
+                <label className="block text-sm font-medium mb-2">Password</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
                 />
-                <span className="text-sm">Encrypt archive</span>
-              </label>
-
-              {encrypt && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Password</label>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                  />
-                </div>
-              )}
+                <p className="text-xs text-muted-foreground mt-1">Archive encryption always requires a password (matches CLI behavior).</p>
+              </div>
             </div>
           </Card>
 

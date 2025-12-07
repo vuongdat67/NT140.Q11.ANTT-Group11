@@ -6,8 +6,7 @@ export type HashAlgorithm = string;
 export type CompressionAlgorithm = 
   | 'LZMA' 
   | 'ZLIB' 
-  | 'BZIP2'
-  | 'BZIP3';
+  | 'BZIP2';
 
 export type Mode = 'basic' | 'standard' | 'advanced';
 
@@ -64,13 +63,13 @@ export interface StegoHideOptions {
   container: string;
   payload: string;
   output: string;
-  bits?: number; // Bits per channel (1-8)
+  bits?: number; // Bits per channel (1-4)
 }
 
 export interface StegoExtractOptions {
   container: string;
   output: string;
-  bits?: number; // Bits per channel (1-8)
+  bits?: number; // Bits per channel (1-4)
 }
 
 export interface ArchiveCreateOptions {
@@ -98,6 +97,8 @@ export interface CompressOptions {
 export interface DecompressOptions {
   input: string;
   output: string;
+  algorithm?: CompressionAlgorithm;
+  autoDetect?: boolean;
 }
 
 // Command Result

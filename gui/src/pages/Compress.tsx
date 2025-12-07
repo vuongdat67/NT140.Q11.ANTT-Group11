@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Input } from '../components/Input';
@@ -8,12 +8,12 @@ import { LogPanel } from '../components/LogPanel';
 import { ProgressBar } from '../components/ProgressBar';
 import { compressFile, decompressFile } from '../lib/cli';
 import type { CompressionAlgorithm, LogEntry } from '../types';
+import { getDefaults } from '../lib/preferences';
 
 const algorithmOptions = [
   { value: 'LZMA', label: 'LZMA (Best compression)' },
   { value: 'ZLIB', label: 'ZLIB (Balanced)' },
-  { value: 'BZIP2', label: 'BZIP2 (Fast)' },
-  { value: 'BZIP3', label: 'BZIP3 (Modern)' },
+  { value: 'BZIP2', label: 'BZIP2' },
 ];
 
 const levelOptions = [
@@ -24,11 +24,13 @@ const levelOptions = [
 ];
 
 export function Compress() {
+  const defaults = useMemo(() => getDefaults(), []);
   const [mode, setMode] = useState<'compress' | 'decompress'>('compress');
   const [inputFile, setInputFile] = useState('');
   const [outputFile, setOutputFile] = useState('');
-  const [algorithm, setAlgorithm] = useState<CompressionAlgorithm>('LZMA');
+  const [algorithm, setAlgorithm] = useState<CompressionAlgorithm>((defaults.compression || 'lzma').toUpperCase() as CompressionAlgorithm);
   const [level, setLevel] = useState(6);
+  const [autoDetect, setAutoDetect] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -84,6 +86,8 @@ export function Compress() {
       const result = await decompressFile({
         input: inputFile,
         output: outputFile,
+        algorithm: autoDetect ? undefined : algorithm,
+        autoDetect,
       });
 
       setProgress(100);
@@ -103,18 +107,25 @@ export function Compress() {
 
   const handleInputChange = (path: string) => {
     setInputFile(path);
-    if (mode === 'compress' && !outputFile) {
-      setOutputFile(path + '.lzma');
-    } else if (mode === 'decompress' && !outputFile) {
-      const extensions = ['.lzma', '.zlib', '.bzip2', '.bzip3'];
+    if (mode === 'compress' && (!outputFile || outputFile === '' || outputFile.endsWith('.lzma') || outputFile.endsWith('.zlib') || outputFile.endsWith('.bzip2'))) {
+      setOutputFile(path ? `${path}.${algorithm.toLowerCase()}` : '');
+    } else if (mode === 'decompress' && (!outputFile || outputFile === '')) {
+      const extensions = ['.lzma', '.zlib', '.bzip2'];
       let output = path;
       for (const ext of extensions) {
-        if (path.endsWith(ext)) {
+        if (path.toLowerCase().endsWith(ext)) {
           output = path.slice(0, -ext.length);
           break;
         }
       }
-      setOutputFile(output);
+      setOutputFile(output || path);
+    }
+  };
+
+  const handleAlgorithmChange = (value: CompressionAlgorithm) => {
+    setAlgorithm(value);
+    if (mode === 'compress' && inputFile) {
+      setOutputFile(`${inputFile}.${value.toLowerCase()}`);
     }
   };
 
@@ -167,12 +178,12 @@ export function Compress() {
         <Card title="Compression Settings">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Algorithm</label>
-              <Select
-                options={algorithmOptions}
-                value={algorithm}
-                onChange={(e) => setAlgorithm(e.target.value as CompressionAlgorithm)}
-              />
+                <label className="block text-sm font-medium mb-2">Algorithm</label>
+                <Select
+                  options={algorithmOptions}
+                  value={algorithm}
+                  onChange={(e) => handleAlgorithmChange(e.target.value as CompressionAlgorithm)}
+                />
             </div>
 
             <div>
@@ -183,6 +194,32 @@ export function Compress() {
                 onChange={(e) => setLevel(Number(e.target.value))}
               />
             </div>
+          </div>
+        </Card>
+      )}
+
+      {mode === 'decompress' && (
+        <Card title="Decompression Settings">
+          <div className="space-y-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={autoDetect}
+                onChange={(e) => setAutoDetect(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm">Auto-detect algorithm from file (recommended)</span>
+            </label>
+            {!autoDetect && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Algorithm</label>
+                <Select
+                  options={algorithmOptions}
+                  value={algorithm}
+                  onChange={(e) => handleAlgorithmChange(e.target.value as CompressionAlgorithm)}
+                />
+              </div>
+            )}
           </div>
         </Card>
       )}

@@ -135,8 +135,8 @@ export function Info() {
             <FilePicker
               value={inputFile}
               onChange={setInputFile}
-              placeholder="Select encrypted file (.enc)"
-              accept={['enc']}
+              placeholder="Select encrypted file (.fvlt)"
+              accept={['fvlt']}
             />
           </div>
 
