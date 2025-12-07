@@ -107,7 +107,12 @@ void EncryptCommand::setup(CLI::App& app) {
         "Compression: none, zlib, bzip2, lzma (levels 1-9)\n"
     );
     
-    encrypt_cmd->callback([this]() { execute(); });
+    encrypt_cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int EncryptCommand::execute() {

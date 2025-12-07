@@ -13,7 +13,12 @@ ListCommand::ListCommand(core::CryptoEngine& engine)
 
 void ListCommand::setup(CLI::App& app) {
     auto* cmd = app.add_subcommand(name(), description());
-    cmd->callback([this]() { execute(); });
+    cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 namespace {

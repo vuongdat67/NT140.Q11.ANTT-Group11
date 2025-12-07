@@ -86,7 +86,12 @@ void BenchmarkCommand::setup(CLI::App& app) {
         "  filevault benchmark -a chacha20-poly1305 -i 100        # Detailed ChaCha20 benchmark\n"
     );
 
-    cmd->callback([this]() { execute(); });
+    cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int BenchmarkCommand::execute() {

@@ -45,7 +45,12 @@ void DumpCommand::setup(CLI::App& app) {
         "Formats: hex (default), binary, base64\n"
     );
     
-    cmd->callback([this]() { this->execute(); });
+    cmd->callback([this]() { 
+        int exit_code = this->execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int DumpCommand::execute() {

@@ -39,7 +39,12 @@ void SignCommand::setup(CLI::App& app) {
         "Default output: <filename>.sig\n"
     );
     
-    cmd->callback([this]() { this->execute(); });
+    cmd->callback([this]() { 
+        int exit_code = this->execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int SignCommand::execute() {

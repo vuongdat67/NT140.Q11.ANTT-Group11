@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure full height and proper theme background */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Apply theme background to the entire page */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Let daisyUI handle body styling through data-theme attribute */
+body {
+  @apply bg-base-100 text-base-content;
+}
+
+/* Improve checkbox visibility */
+.checkbox {
+  border-width: 2px;
+  border-color: hsl(var(--bc) / 0.3);
+}
+
+.checkbox:checked {
+  border-color: hsl(var(--p));
+}
+
+/* Ensure buttons have visible borders */
+.btn {
+  border-width: 2px;
+}
+
+.btn-outline {
+  border-color: hsl(var(--bc) / 0.2);
+}
+
+.btn-ghost {
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  border-color: hsl(var(--bc) / 0.2);
+}

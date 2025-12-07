@@ -56,7 +56,12 @@ void KeygenCommand::setup(CLI::App& app) {
         "Default output: filevault_key.pub (public), filevault_key.key (private)\n"
     );
     
-    cmd->callback([this]() { execute(); });
+    cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int KeygenCommand::execute() {

@@ -48,7 +48,12 @@ void CompressCommand::setup(CLI::App& app) {
         "Default: lzma level 6\n"
     );
     
-    subcommand_->callback([this]() { execute(); });
+    subcommand_->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int CompressCommand::execute() {

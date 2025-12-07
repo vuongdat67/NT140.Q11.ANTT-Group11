@@ -30,7 +30,12 @@ void InfoCommand::setup(CLI::App& app) {
         "encryption algorithm, KDF, compression, and sizes of various components.\n"
     );
     
-    cmd->callback([this]() { execute(); });
+    cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int InfoCommand::execute() {

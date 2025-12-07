@@ -37,7 +37,12 @@ void DecompressCommand::setup(CLI::App& app) {
         "\n"
         "Algorithms: zlib, bzip2, lzma\n"
     );
-    subcommand_->callback([this]() { execute(); });
+    subcommand_->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int DecompressCommand::execute() {

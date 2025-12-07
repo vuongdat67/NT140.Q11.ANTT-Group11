@@ -28,7 +28,13 @@ void StegoCommand::setup(CLI::App& app) {
     embed_cmd->add_option("-b,--bits", bits_per_channel_, "Bits per channel (1-4, default: 1)")
         ->check(CLI::Range(1, 4));
     embed_cmd->add_flag("-v,--verbose", verbose_, "Show detailed information");
-    embed_cmd->callback([this]() { operation_ = "embed"; execute(); });
+    embed_cmd->callback([this]() { 
+        operation_ = "embed";
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
     
     // Extract subcommand
     auto* extract_cmd = cmd->add_subcommand("extract", "Extract hidden data from an image");
@@ -40,7 +46,13 @@ void StegoCommand::setup(CLI::App& app) {
     extract_cmd->add_option("-b,--bits", bits_per_channel_, "Bits per channel (1-4, default: 1)")
         ->check(CLI::Range(1, 4));
     extract_cmd->add_flag("-v,--verbose", verbose_, "Show detailed information");
-    extract_cmd->callback([this]() { operation_ = "extract"; execute(); });
+    extract_cmd->callback([this]() { 
+        operation_ = "extract";
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
     
     // Capacity subcommand
     auto* capacity_cmd = cmd->add_subcommand("capacity", "Calculate embedding capacity of an image");
@@ -49,7 +61,13 @@ void StegoCommand::setup(CLI::App& app) {
         ->check(CLI::ExistingFile);
     capacity_cmd->add_option("-b,--bits", bits_per_channel_, "Bits per channel (1-4, default: 1)")
         ->check(CLI::Range(1, 4));
-    capacity_cmd->callback([this]() { operation_ = "capacity"; execute(); });
+    capacity_cmd->callback([this]() { 
+        operation_ = "capacity";
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 
     capacity_cmd->footer(
         "\nExamples:\n"

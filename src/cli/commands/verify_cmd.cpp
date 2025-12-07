@@ -39,7 +39,12 @@ void VerifyCommand::setup(CLI::App& app) {
         "Exit code: 0 = valid signature, 1 = invalid signature or error\n"
     );
     
-    cmd->callback([this]() { this->execute(); });
+    cmd->callback([this]() { 
+        int exit_code = this->execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 int VerifyCommand::execute() {

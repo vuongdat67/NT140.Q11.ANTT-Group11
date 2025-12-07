@@ -33,7 +33,12 @@ void ArchiveCommand::setup(CLI::App& app) {
     create_cmd->add_option("-s,--security", security_level_, "Security level")
         ->check(CLI::IsMember({"weak", "medium", "strong", "paranoid"}));
     create_cmd->add_flag("-v,--verbose", verbose_, "Verbose output");
-    create_cmd->callback([this]() { execute(); });
+    create_cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
     
     // Extract mode
     auto* extract_cmd = cmd->add_subcommand("extract", "Extract encrypted archive");
@@ -43,7 +48,13 @@ void ArchiveCommand::setup(CLI::App& app) {
     extract_cmd->add_option("-o,--output", extract_dir_, "Output directory");
     extract_cmd->add_option("-p,--password", password_, "Decryption password");
     extract_cmd->add_flag("-v,--verbose", verbose_, "Verbose output");
-    extract_cmd->callback([this]() { extract_ = true; execute(); });
+    extract_cmd->callback([this]() { 
+        extract_ = true;
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
     
     // List mode - TODO: Implement proper listing without extraction
     auto* list_cmd = cmd->add_subcommand("list", "List archive contents");
@@ -52,7 +63,13 @@ void ArchiveCommand::setup(CLI::App& app) {
         ->check(CLI::ExistingFile);
     list_cmd->add_option("-p,--password", password_, "Decryption password");
     
-    list_cmd->callback([this]() { extract_ = true; execute(); });  // Temporarily use extract
+    list_cmd->callback([this]() { 
+        extract_ = true;
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });  // Temporarily use extract
     cmd->footer(
         "Examples:\n"
         "  filevault archive create file1.txt file2.txt -o backup.fva     # Create archive\n"

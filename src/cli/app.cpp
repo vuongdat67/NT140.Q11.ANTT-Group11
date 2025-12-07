@@ -93,6 +93,9 @@ int Application::run(int argc, char** argv) {
         
         return 0;
         
+    } catch (const CLI::RuntimeError& e) {
+        // Command execution failed - return the error code
+        return e.get_exit_code();
     } catch (const CLI::ParseError& e) {
         return app_.exit(e);
     } catch (const std::exception& e) {

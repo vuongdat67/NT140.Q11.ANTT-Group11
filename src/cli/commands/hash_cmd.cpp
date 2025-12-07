@@ -69,13 +69,19 @@ void HashCommand::setup(CLI::App& app) {
         "  HMAC authentication:   filevault hash file.txt --hmac secretkey\n"
         "  Save to file:          filevault hash file.txt -o checksum.txt\n"
         "\n"
-        "Algorithms: md5, sha1, sha224, sha256, sha384, sha512, sha512-256,\n"
-        "  sha3-256, sha3-384, sha3-512, blake2b-256, blake2b-512, blake2s-256,\n"
-        "  ripemd-160, whirlpool, tiger, sm3, streebog-256, streebog-512\n"
+        // Hash algorithm: md5, sha1, sha224, sha256, sha384, sha512, sha3-256, sha3-512, blake2b-512, blake2s-256
+        "Algorithms: md5 (insecure), sha1 (insecure), sha224, sha256, sha384, sha512,\n"
+        "            sha3-224, sha3-256, sha3-384, sha3-512,\n"
+        "            blake2b-256, blake2b-384, blake2b-512, blake2s-256\n"
         "Output formats: hex, base64, binary\n"
     );
     
-    cmd->callback([this]() { execute(); });
+    cmd->callback([this]() { 
+        int exit_code = execute();
+        if (exit_code != 0) {
+            throw CLI::RuntimeError(exit_code);
+        }
+    });
 }
 
 std::string HashCommand::get_botan_algorithm_name(const std::string& algo) {

@@ -89,3 +89,10 @@ docs/doxygen-latex/
 doxyfile_html.txt
 doxyfile_latex.txt
 doxyfile_readme.txt
+
+copilot/
+FEATURE_ANALYSIS.md
+GUI_PLAN.md
+node_modules/
+
+filevault-qt/
