@@ -1,0 +1,262 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "🔨 Clean All",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue; Remove-Item CMakeUserPresets.json -ErrorAction SilentlyContinue; Write-Host '✅ Cleaned build directory' -ForegroundColor Green"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 Install Dependencies (MSVC)",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && if not exist ${workspaceFolder}\\build mkdir ${workspaceFolder}\\build && cd /d ${workspaceFolder}\\build && conan install .. --output-folder=. --build=missing -pr msvc"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": [
+						"/d",
+						"/c"
+					]
+				}
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "⚙️ Configure (MSVC)",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cd /d ${workspaceFolder} && cmake --preset conan-release -DBUILD_TESTS=ON"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": [
+						"/d",
+						"/c"
+					]
+				}
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"dependsOn": [
+				"📦 Install Dependencies (MSVC)"
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "🏗️ Build (MSVC)",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cd /d ${workspaceFolder} && cmake --build build\\build\\Release --parallel 16"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": [
+						"/d",
+						"/c"
+					]
+				}
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"dependsOn": [
+				"⚙️ Configure (MSVC)"
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false
+			},
+			"problemMatcher": {
+				"owner": "cpp",
+				"fileLocation": [
+					"relative",
+					"${workspaceFolder}"
+				],
+				"pattern": {
+					"regexp": "^(.*)\\((\\d+)\\):\\s+(warning|error)\\s+(.*):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"severity": 3,
+					"code": 4,
+					"message": 5
+				}
+			}
+		},
+		{
+			"label": "🔨 Full Build (Clean + Build MSVC)",
+			"type": "shell",
+			"command": "echo",
+			"args": [
+				"Full build completed!"
+			],
+			"dependsOn": [
+				"🔨 Clean All",
+				"🏗️ Build (MSVC)"
+			],
+			"dependsOrder": "sequence",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "🧪 Run Tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cd /d ${workspaceFolder} && ctest --test-dir build\\build\\Release --output-on-failure -j16"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "cmd.exe",
+					"args": [
+						"/d",
+						"/c"
+					]
+				}
+			},
+			"group": "test",
+			"dependsOn": [
+				"🏗️ Build (MSVC)"
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "🚀 Run FileVault",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"& '${workspaceFolder}\\build\\build\\Release\\bin\\filevault.exe'"
+			],
+			"group": "none",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "🎨 Format Code (clang-format)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-ChildItem -Path src,include -Include *.cpp,*.hpp -Recurse | ForEach-Object { clang-format -i $_.FullName; Write-Host \"Formatted: $($_.Name)\" -ForegroundColor Cyan }"
+			],
+			"group": "none",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build DLL",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cmake --build build\\build\\Release --target filevault_dll --parallel 16"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild CLI",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cd /d D:\\code\\filevault && cmake --build build\\build\\Release --target filevault --parallel 16"
+			],
+			"problemMatcher": []
+		}
+	]
+}

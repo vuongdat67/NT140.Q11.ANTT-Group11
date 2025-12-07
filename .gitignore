@@ -11,7 +11,7 @@ conan_toolchain.cmake
 CMakeUserPresets.json
 
 # IDE
-.vscode/
+# .vscode/
 .idea/
 *.swp
 *.swo
