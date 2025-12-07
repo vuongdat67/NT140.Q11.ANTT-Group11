@@ -3,7 +3,7 @@ import { Card } from '../components/Card';
 import { useState, useEffect } from 'react';
 import { getOperationStats, formatBytes, getRecentFiles, clearRecentFiles, type RecentFile } from '../lib/preferences';
 import { Button } from '../components/Button';
-import { open } from '@tauri-apps/plugin-shell';
+import { openPath } from '@tauri-apps/plugin-opener';
 
 export function Dashboard() {
   const [stats, setStats] = useState(getOperationStats());
@@ -172,7 +172,8 @@ export function Dashboard() {
                               console.error('File path is empty');
                               return;
                             }
-                            await open(file.path);
+                            // Use opener plugin for better file/folder handling
+                            await openPath(file.path);
                           } catch (error) {
                             console.error('Failed to open file:', error);
                             // Show user-friendly error
@@ -190,11 +191,13 @@ export function Dashboard() {
                           try {
                             const dir = file.path.replace(/[/\\][^/\\]+$/, '');
                             if (dir) {
-                              // Open folder in file manager
-                              await open(dir);
+                              // Open folder in file manager using opener plugin
+                              await openPath(dir);
                             }
                           } catch (error) {
+                            const dir = file.path.replace(/[/\\][^/\\]+$/, '');
                             console.error('Failed to open folder:', error);
+                            alert(`Failed to open folder: ${dir}\n${error instanceof Error ? error.message : String(error)}`);
                           }
                         }}
                         title="Show in folder"

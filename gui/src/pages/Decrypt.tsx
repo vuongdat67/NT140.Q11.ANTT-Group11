@@ -85,23 +85,22 @@ export function Decrypt() {
 
   const handleInputChange = (path: string) => {
     setInputFile(path);
-    if (!outputFile || outputFile === '') {
-      // Remove .fvlt extension but preserve original extension
-      // Example: "output_stego.png.fvlt" -> "output_stego.png"
-      const knownExts = ['.fvlt', '.enc', '.encrypted', '.fv'];
-      let output = path;
-      for (const ext of knownExts) {
-        if (path.toLowerCase().endsWith(ext)) {
-          output = path.slice(0, -ext.length);
-          break;
-        }
+    // Always auto-update output file when input changes (like Encrypt page)
+    // Remove .fvlt extension but preserve original extension
+    // Example: "terminal.jpg.fvlt" -> "terminal.jpg"
+    const knownExts = ['.fvlt', '.enc', '.encrypted', '.fv'];
+    let output = path;
+    for (const ext of knownExts) {
+      if (path.toLowerCase().endsWith(ext.toLowerCase())) {
+        output = path.slice(0, -ext.length);
+        break;
       }
-      // If no known extension found, add .decrypted
-      if (output === path && path) {
-        output = `${path}.decrypted`;
-      }
-      setOutputFile(output);
     }
+    // If no known extension found, add .decrypted
+    if (output === path && path) {
+      output = `${path}.decrypted`;
+    }
+    setOutputFile(output);
   };
 
   return (

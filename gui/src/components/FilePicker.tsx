@@ -57,7 +57,7 @@ export function FilePicker({
     <div
       onClick={handleClick}
       className={cn(
-        'flex items-center gap-2 px-4 py-2 border border-border rounded-md cursor-pointer hover:bg-accent transition-colors',
+        'flex items-center gap-2 pl-3 pr-4 py-2 border border-border rounded-md cursor-pointer hover:bg-accent transition-colors',
         className
       )}
     >

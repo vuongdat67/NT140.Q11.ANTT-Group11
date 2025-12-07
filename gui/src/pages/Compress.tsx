@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Input } from '../components/Input';
@@ -34,6 +34,20 @@ export function Compress() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  // Sync with default compression from Settings
+  useEffect(() => {
+    const handleDefaultsChange = () => {
+      const latest = getDefaults();
+      setAlgorithm((latest.compression || 'lzma').toUpperCase() as CompressionAlgorithm);
+    };
+
+    window.addEventListener('defaultsChanged', handleDefaultsChange);
+
+    return () => {
+      window.removeEventListener('defaultsChanged', handleDefaultsChange);
+    };
+  }, []);
 
   const addLog = (level: LogEntry['level'], message: string) => {
     setLogs((prev) => [...prev, { timestamp: new Date(), level, message }]);

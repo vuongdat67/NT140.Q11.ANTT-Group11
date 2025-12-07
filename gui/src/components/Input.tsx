@@ -14,7 +14,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          'input w-full',
+          'input w-full pl-3',
           {
             'input-bordered': variant === 'default',
             'input-primary': variant === 'primary',

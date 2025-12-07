@@ -14,7 +14,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <select
         className={cn(
-          'select w-full',
+          'select w-full pl-3',
           {
             'select-bordered': variant === 'default',
             'select-primary': variant === 'primary',

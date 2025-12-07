@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { FilePicker } from '../components/FilePicker';
 import { Select } from '../components/Select';
@@ -47,6 +47,20 @@ export function Hash() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [copied, setCopied] = useState(false);
+
+  // Sync with default hash algorithm from Settings
+  useEffect(() => {
+    const handleDefaultsChange = () => {
+      const latest = getDefaults();
+      setAlgorithm((latest.hash || 'sha256') as HashAlgorithm);
+    };
+
+    window.addEventListener('defaultsChanged', handleDefaultsChange);
+
+    return () => {
+      window.removeEventListener('defaultsChanged', handleDefaultsChange);
+    };
+  }, []);
 
   const addLog = (level: LogEntry['level'], message: string) => {
     setLogs((prev) => [...prev, { timestamp: new Date(), level, message }]);
