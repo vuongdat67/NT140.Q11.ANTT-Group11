@@ -60,21 +60,47 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Setup MSVC (Windows)
+        if: matrix.platform == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Build CLI (Windows)
         if: matrix.platform == 'windows-latest'
-        shell: cmd
+        shell: pwsh
         working-directory: .
         run: |
           pip install conan==2.22.2
           choco install ninja -y
-          mkdir build
+          
+          # Setup Conan profile
+          $profileDir = "$env:USERPROFILE\.conan2\profiles"
+          if (-not (Test-Path $profileDir)) { New-Item -ItemType Directory -Path $profileDir }
+          @"
+          [settings]
+          arch=x86_64
+          build_type=Release
+          compiler=msvc
+          compiler.cppstd=20
+          compiler.runtime=dynamic
+          compiler.version=194
+          os=Windows
+          [conf]
+          tools.cmake.cmaketoolchain:generator=Ninja
+          "@ | Out-File -FilePath "$profileDir\default" -Encoding utf8NoBOM
+          
+          # Build CLI
+          New-Item -ItemType Directory -Force build
           cd build
-          conan install .. --output-folder=. --build=missing -pr ../scripts/conan-profiles/msvc.txt
+          conan install .. --output-folder=. --build=missing
           cd ..
           cmake --preset conan-release -DBUILD_TESTS=OFF
           cmake --build build\build\Release --parallel
-          mkdir gui\cli-bin
-          copy build\build\Release\bin\release\filevault.exe gui\cli-bin\
+          
+          # Copy to gui
+          New-Item -ItemType Directory -Force gui\cli-bin
+          Copy-Item build\build\Release\bin\release\filevault.exe gui\cli-bin\
 
       - name: Build CLI (Linux)
         if: matrix.platform == 'ubuntu-latest'
@@ -85,12 +111,31 @@ jobs:
           sudo apt-get install -y ninja-build gcc-13 g++-13
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+          
+          # Setup Conan profile
+          mkdir -p ~/.conan2/profiles
+          cat > ~/.conan2/profiles/default << 'EOF'
+          [settings]
+          arch=x86_64
+          build_type=Release
+          compiler=gcc
+          compiler.cppstd=20
+          compiler.libcxx=libstdc++11
+          compiler.version=13
+          os=Linux
+          [conf]
+          tools.cmake.cmaketoolchain:generator=Ninja
+          EOF
+          
+          # Build CLI
           mkdir -p build
           cd build
           conan install .. --output-folder=. --build=missing
           cd ..
           cmake --preset conan-release -DBUILD_TESTS=OFF
           cmake --build build/build/Release --parallel $(nproc)
+          
+          # Copy to gui
           mkdir -p gui/cli-bin
           cp build/build/Release/bin/release/filevault gui/cli-bin/
 
@@ -100,13 +145,32 @@ jobs:
         working-directory: .
         run: |
           pip install conan==2.22.2
-          brew install ninja
+          brew install ninja cmake
+          
+          # Setup Conan profile
+          mkdir -p ~/.conan2/profiles
+          cat > ~/.conan2/profiles/default << 'EOF'
+          [settings]
+          arch=armv8
+          build_type=Release
+          compiler=apple-clang
+          compiler.cppstd=20
+          compiler.libcxx=libc++
+          compiler.version=15
+          os=Macos
+          [conf]
+          tools.cmake.cmaketoolchain:generator=Ninja
+          EOF
+          
+          # Build CLI
           mkdir -p build
           cd build
           conan install .. --output-folder=. --build=missing
           cd ..
           cmake --preset conan-release -DBUILD_TESTS=OFF
           cmake --build build/build/Release --parallel
+          
+          # Copy to gui
           mkdir -p gui/cli-bin
           cp build/build/Release/bin/release/filevault gui/cli-bin/
 
