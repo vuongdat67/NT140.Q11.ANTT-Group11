@@ -38,7 +38,7 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../cli-bin/*"
+      "bin/*"
     ],
     "windows": {
       "certificateThumbprint": null,

@@ -13,26 +13,46 @@ pub struct CommandResult {
     error: Option<String>,
 }
 
-/// Get the path to the bundled filevault.exe
+/// Get the path to the bundled filevault CLI
 fn get_filevault_exe_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
-    // Try to find the exe in the resource directory
+    // Try to find the CLI in the resource directory (bundled with Tauri)
     let resource_path = app_handle
         .path()
         .resource_dir()
         .map_err(|e| format!("Failed to get resource directory: {}", e))?;
 
-    let exe_path = resource_path.join("bin").join("filevault.exe");
+    // CLI is bundled in bin/ folder
+    #[cfg(target_os = "windows")]
+    let exe_name = "filevault.exe";
+    #[cfg(not(target_os = "windows"))]
+    let exe_name = "filevault";
+
+    let exe_path = resource_path.join("bin").join(exe_name);
 
     if exe_path.exists() {
         Ok(exe_path)
     } else {
-        // Fallback to development path
-        let dev_path = PathBuf::from("D:\\code\\filevault\\build\\build\\Release\\bin\\release\\filevault.exe");
-        if dev_path.exists() {
-            Ok(dev_path)
-        } else {
-            Err(format!("FileVault executable not found at {:?} or {:?}", exe_path, dev_path))
+        // Fallback to development paths
+        #[cfg(target_os = "windows")]
+        let dev_paths = vec![
+            PathBuf::from("D:\\code\\filevault\\build\\build\\Release\\bin\\release\\filevault.exe"),
+            PathBuf::from("..\\..\\build\\build\\Release\\bin\\release\\filevault.exe"),
+            PathBuf::from("bin\\filevault.exe"),
+        ];
+        #[cfg(not(target_os = "windows"))]
+        let dev_paths = vec![
+            PathBuf::from("../../build/build/Release/bin/release/filevault"),
+            PathBuf::from("../build/build/Release/bin/release/filevault"),
+            PathBuf::from("bin/filevault"),
+        ];
+
+        for dev_path in &dev_paths {
+            if dev_path.exists() {
+                return Ok(dev_path.clone());
+            }
         }
+
+        Err(format!("FileVault executable not found at {:?}. Tried paths: {:?}", exe_path, dev_paths))
     }
 }
 

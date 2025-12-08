@@ -356,8 +356,8 @@ jobs:
         cmake --preset conan-release -DBUILD_TESTS=OFF
         cmake --build build\build\Release --parallel
         
-        New-Item -ItemType Directory -Force gui\cli-bin
-        Copy-Item build\build\Release\bin\release\filevault.exe gui\cli-bin\
+        New-Item -ItemType Directory -Force gui\src-tauri\bin
+        Copy-Item build\build\Release\bin\release\filevault.exe gui\src-tauri\bin\
 
     - name: Build CLI (Linux)
       if: matrix.platform == 'ubuntu-latest'
@@ -390,8 +390,8 @@ jobs:
         cmake --preset conan-release -DBUILD_TESTS=OFF
         cmake --build build/build/Release --parallel $(nproc)
         
-        mkdir -p gui/cli-bin
-        cp build/build/Release/bin/release/filevault gui/cli-bin/
+        mkdir -p gui/src-tauri/bin
+        cp build/build/Release/bin/release/filevault gui/src-tauri/bin/
 
     - name: Build CLI (macOS)
       if: matrix.platform == 'macos-latest'
@@ -422,8 +422,8 @@ jobs:
         cmake --preset conan-release -DBUILD_TESTS=OFF
         cmake --build build/build/Release --parallel
         
-        mkdir -p gui/cli-bin
-        cp build/build/Release/bin/release/filevault gui/cli-bin/
+        mkdir -p gui/src-tauri/bin
+        cp build/build/Release/bin/release/filevault gui/src-tauri/bin/
 
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
