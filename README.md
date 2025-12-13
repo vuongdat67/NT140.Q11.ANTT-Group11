@@ -5,6 +5,11 @@
 [![CI](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15/actions/workflows/ci.yml/badge.svg)](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+
+https://vuongdat67.github.io/FileVault_mkdocs/
+https://vuongdat67.github.io/NT140.Q11.ANTT-Group15/doxygen/html/md_README.html
+https://vuongdat67.github.io/NT140.Q11.ANTT-Group15/doxygen/latex/FileVault-API.pdf
+
 ## ✨ Features
 
 ### 🔒 Modern Encryption
