@@ -18,7 +18,7 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-      primary: teal
+      primary: black
       accent: green
   features:
     - navigation.instant
@@ -143,6 +143,4 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
 
-extra_css:
-  - css/heading.css
     
