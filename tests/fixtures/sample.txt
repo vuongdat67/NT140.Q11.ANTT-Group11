@@ -1,8 +1,0 @@
-The quick brown fox jumps over the lazy dog.
-This is a sample text file for testing FileVault encryption.
-It contains multiple lines and various characters: !@#$%^&*()
-Numbers: 1234567890
-Special symbols: []{}|;':",.<>?/`~
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.

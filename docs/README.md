@@ -2,17 +2,7 @@
 
 Tài liệu hướng dẫn sử dụng và học tập về các thuật toán mã hóa trong FileVault.
 
-## 📚 API Documentation
-
-### Doxygen (API Reference)
-- **Location**: [`doxygen/html/index.html`](doxygen/html/index.html)
-- **Features**: 
-  - Class hierarchy diagrams
-  - Full API reference với source code
-  - Search functionality
-  - Cross-referenced documentation
-
-**Mở docs**: Double-click file `docs/doxygen/html/index.html` trong browser.
+## 📚 Documentation
 
 ## 🔐 Algorithm Categories
 

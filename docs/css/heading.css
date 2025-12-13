@@ -1,0 +1,33 @@
+/* Heading màu sắc riêng */
+.md-typeset h1 {
+  /* color: #b22252;  */
+  color: #f3376c; 
+  font-weight: bold;
+}
+
+.md-typeset h2 {
+  /* color: #3f8fff;  */
+    color: #fab387;
+    font-weight: bold;
+}
+
+.md-typeset h3 {
+  /* color: #009688;  */
+    color: #a6e3a1;
+    font-weight: bold;
+}
+
+ .md-typeset h4 {
+  color: #c75e3e; 
+  font-weight: bold;
+}
+
+.md-typeset h5 {
+  color: #d67dff; 
+  font-weight: bold;
+}
+
+.md-typeset h6 {
+  color: #57c7ff; 
+  font-weight: bold;
+}
