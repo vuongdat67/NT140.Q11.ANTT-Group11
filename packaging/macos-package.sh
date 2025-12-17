@@ -7,9 +7,9 @@ set -e
 APP_NAME="FileVault"
 APP_VERSION="1.0.0"
 BUNDLE_ID="com.nt140.filevault"
-MAINTAINER="NT140.Q11.ANTT-Group15"
+MAINTAINER="NT140.Q11.ANTT-Group11"
 DESCRIPTION="Professional cross-platform file encryption CLI tool"
-HOMEPAGE="https://github.com/vuongdat67/NT140.Q11.ANTT-Group15"
+HOMEPAGE="https://github.com/vuongdat67/NT140.Q11.ANTT-Group11"
 BUILD_DIR="./build/build/Release/bin"
 OUTPUT_DIR="./dist"
 

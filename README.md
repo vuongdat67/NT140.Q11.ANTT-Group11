@@ -2,7 +2,7 @@
 
 **Professional cross-platform file encryption CLI tool** built with modern C++20 and Botan 3.x cryptographic library.
 
-[![CI](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15/actions/workflows/ci.yml/badge.svg)](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15/actions/workflows/ci.yml)
+[![CI](https://github.com/vuongdat67/NT140.Q11.ANTT-Group11/actions/workflows/ci.yml/badge.svg)](https://github.com/vuongdat67/NT140.Q11.ANTT-Group11/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 
@@ -11,8 +11,8 @@
 
 ### 📚 Documentation link
 - https://vuongdat67.github.io/FileVault_mkdocs/
-- https://vuongdat67.github.io/NT140.Q11.ANTT-Group15/doxygen/html/md_README.html 
-- https://vuongdat67.github.io/NT140.Q11.ANTT-Group15/doxygen/latex/FileVault-API.pdf 
+- https://vuongdat67.github.io/NT140.Q11.ANTT-Group11/doxygen/html/md_README.html 
+- https://vuongdat67.github.io/NT140.Q11.ANTT-Group11/doxygen/latex/FileVault-API.pdf 
 
 ### 🔒 Modern Encryption
 - **AEAD Ciphers**: AES-GCM (128/192/256), ChaCha20-Poly1305, Serpent-GCM, Twofish-GCM

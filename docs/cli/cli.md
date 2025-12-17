@@ -511,4 +511,4 @@ For more information:
 - Read the main [README.md](README.md)
 - Check [ARCHITECTURE.md](docs/ARCHITECTURE.md) for technical details
 - See [ALGORITHMS.md](docs/ALGORITHMS.md) for cryptography information
-- Visit the repository: https://github.com/vuongdat67/NT140.Q11.ANTT-Group15
+- Visit the repository: https://github.com/vuongdat67/NT140.Q11.ANTT-Group11

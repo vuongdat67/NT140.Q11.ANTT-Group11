@@ -29,8 +29,8 @@ $ErrorActionPreference = "Stop"
 # Configuration
 $AppName = "FileVault"
 $AppVersion = "1.0.0"
-$Publisher = "NT140.Q11.ANTT-Group15"
-$AppUrl = "https://github.com/vuongdat67/NT140.Q11.ANTT-Group15"
+$Publisher = "NT140.Q11.ANTT-Group11"
+$AppUrl = "https://github.com/vuongdat67/NT140.Q11.ANTT-Group11"
 $BuildDir = ".\build\build\Release\bin"
 $IconPath = ".\assets\icon.ico"
 

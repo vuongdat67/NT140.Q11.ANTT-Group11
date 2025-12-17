@@ -88,7 +88,7 @@
 
 ### Option 1: From VSIX (Recommended)
 
-1. Download `filevault-1.0.0.vsix` from [Releases](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15/releases)
+1. Download `filevault-1.0.0.vsix` from [Releases](https://github.com/vuongdat67/NT140.Q11.ANTT-Group11/releases)
 2. Open VS Code
 3. Press `Ctrl+Shift+P` → `Extensions: Install from VSIX...`
 4. Select the downloaded `.vsix` file
@@ -199,7 +199,7 @@ If auto-detection fails:
 
 - Visual Studio Code 1.85.0+
 - FileVault CLI installed
-  - Download from [Releases](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15/releases)
+  - Download from [Releases](https://github.com/vuongdat67/NT140.Q11.ANTT-Group11/releases)
   - Or build from source
 
 ## 📄 License
@@ -208,7 +208,7 @@ MIT License - see [LICENSE](LICENSE)
 
 ## 🤝 Contributing
 
-Contributions welcome! Please see the main [repository](https://github.com/vuongdat67/NT140.Q11.ANTT-Group15).
+Contributions welcome! Please see the main [repository](https://github.com/vuongdat67/NT140.Q11.ANTT-Group11).
 
 ---
 

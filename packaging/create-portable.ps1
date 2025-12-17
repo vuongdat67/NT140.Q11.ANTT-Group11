@@ -136,7 +136,7 @@ EXAMPLES:
 .\filevault.exe hash important-file.zip
 
 For more information, visit:
-https://github.com/vuongdat67/NT140.Q11.ANTT-Group15
+https://github.com/vuongdat67/NT140.Q11.ANTT-Group11
 "@
 
 $quickStartPath = Join-Path $StagingDir "QUICK-START.txt"
